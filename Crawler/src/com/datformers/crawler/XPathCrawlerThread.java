@@ -176,7 +176,12 @@ public class XPathCrawlerThread implements Runnable{
 				return;
 			ArrayList<String> extractedUrls = extractLinks(doc);
 			URLQueue queue = URLQueue.getInstance(); //url queue
+			
+			//TODO: save this URL to a list of URLs, use this for URL seen
+			
 			for(String str: extractedUrls) {
+				//TODO: check if extracted URL belongs same crawler, if so add to queue
+				//TODO: else add to some other Set for checkpointing phase
 				System.out.println(Thread.currentThread().getName()+" Pushing to Queue: "+str);
 				queue.add(str); //add extracted links
 			} 
@@ -196,7 +201,7 @@ public class XPathCrawlerThread implements Runnable{
 		document.setDocumentContents(resourceManagement.getBody());
 		document.setLastAccessedDate(new Date());
 		PrimaryIndex<String, ParsedDocument> indexDoc = wrapper.getStore().getPrimaryIndex(String.class, ParsedDocument.class);
-		indexDoc.put(document);
+		indexDoc.put(document);		
 		XPathCrawler.addCounter(); //increase counter of files succesfully fetched and parsed
 		if(!newResource) { //update next allowed access time for domain
 			DomainRules domainRules = parent.getRulesForDomain(getDomain(url));

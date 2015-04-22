@@ -16,6 +16,8 @@ public class ParsedDocument {
 	private String url; //url of file
 	private String documentContents; //content
 	private Date lastAccessedDate; //last accessed date
+	//TODO: add hashed Doc Id (BigInteger)
+	//TODO: list of extracted URLs
 	public ParsedDocument() {
 		
 	}

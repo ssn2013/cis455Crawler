@@ -11,6 +11,7 @@ import com.datformers.crawler.XPathCrawler;
 public class URLQueue {
 	private Queue<String> urlQueue = new LinkedList<String>();
 	private static URLQueue queue = null;
+	
 	private URLQueue() {
 		
 	}

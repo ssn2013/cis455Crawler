@@ -19,12 +19,15 @@ public class DBWrapper {
 
 	private static Environment myEnv;
 	private static EntityStore store;
+	private static boolean dbOpen=false;
 	
 	/*
 	 * Method to initialize environment
 	 */
 	public static void initialize(String environment) {
 		try {
+			if(dbOpen) return;
+			dbOpen=true;
 			EnvironmentConfig myEnvConfig = new EnvironmentConfig(); //initialize environment
 			StoreConfig storeConfig = new StoreConfig(); //initialize store
 			myEnvConfig.setAllowCreate(true);
@@ -49,8 +52,12 @@ public class DBWrapper {
 	/*
 	 * Method to close db and environment
 	 */
+	public static void commit() {
+		store.sync();
+	}
 	public static void close() {
 		System.out.println("\nClose method called");
+		dbOpen=false;
 		if (store != null) {
 			try {
 				System.out.println("\nGonna close wrapper");

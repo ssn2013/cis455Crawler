@@ -1,5 +1,8 @@
 package com.datformers.crawler;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -7,6 +10,7 @@ import java.util.List;
 import com.datformers.crawler.info.RobotsTxtInfo;
 import com.datformers.crawler.resources.DomainRules;
 import com.datformers.crawler.resources.URLQueue;
+import com.datformers.crawler.resources.outgoingMap;
 import com.datformers.storage.DBWrapper;
 
 /*
@@ -15,7 +19,8 @@ import com.datformers.storage.DBWrapper;
 public class XPathCrawler {
 
 	public static String STARTING_URL = null;
-	public static String DB_DIRECTORY = null;
+	public static String STORE_DIRECTORY = null;
+	public static String CRAWLERS = null;
 	public static int MAX_SIZE = -1;
 	private static int MAX_PAGES = -1;
 	private static int NO_OF_THREADS = 5;
@@ -23,6 +28,7 @@ public class XPathCrawler {
 	private List<Thread> subThreads = new ArrayList<Thread>();
 	private static XPathCrawler crawler = null;
 	private static int count = 0;
+	public static int selfIndex=-1;
 	public static boolean SYSTEM_SHUTDOWN = false;
 	public static XPathCrawler getInstance() {
 		return crawler;
@@ -43,7 +49,7 @@ public class XPathCrawler {
 		return domainToRulesMapping.get(domain);
 	}
 	/*
-	 *Functoin to add the parsed Robots.txt file to the domain specific rules 
+	 *Function to add the parsed Robots.txt file to the domain specific rules 
 	 */
 	public void setRobotsTxtInfo(String domain, RobotsTxtInfo robotsTxtInfo) {
 		domainToRulesMapping.put(domain, new DomainRules(domain, robotsTxtInfo));
@@ -51,22 +57,57 @@ public class XPathCrawler {
 	/*
 	 * The task of the crawler
 	 */
+	public boolean getUrlFromFile() {
+		URLQueue queue = URLQueue.getInstance();
+		String spoolIn = STORE_DIRECTORY + "/spool_in";
+		spoolIn = spoolIn.replace("//", "/");
+		//get urls from spool in?
+		File f = new File(spoolIn);
+		if(!f.exists()) return false;
+		File[] files = f.listFiles();
+		String line;
+		for(File file:files) {
+			//check if file is the merged one!!
+			if(file.getAbsolutePath().contains("merged")) continue;
+			try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+				while ((line = br.readLine()) != null) {
+					queue.add(line);
+				}
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+		}
+		return true;
+	}
+	
 	public void executeTask() {
-		URLQueue queue = URLQueue.getInstance(); //instance of the queueu of URLs
-		queue.add(STARTING_URL); //this crawler class just enqueues the first URL and the threads handle the rest
+		String delim=";;|;;";
+		URLQueue queue = URLQueue.getInstance(); //instance of the queue of URLs
+		String keys[]=CRAWLERS.split(delim);
+		outgoingMap.createInstance(keys); // create a separate output set of URLs for each worker
+		//have to check if we have to resume operation or use seed urls
+		if(STARTING_URL!=null) {
+		
+		String urls[]=STARTING_URL.split(delim);
+		for(String url:urls) queue.add(url); //this crawler class just enqueues the first URL and the threads handle the rest
+		}
+		else getUrlFromFile();
 	}
 	public static void main(String args[]) throws Exception { 
 		try {
 			if(args.length<3) {
-				System.out.println("3 Arguments: 1. Starting URL, 2. DB directory, 3. Maximum size required");
+				System.out.println("3 Arguments: 1. Starting URL, 2. DB directory, 3. Maximum size required 4.Num Pages 5.Crawlers");
 				return;
 			}
 			STARTING_URL = args[0]; //starting URL
-			DB_DIRECTORY = args[1]; //director of database environment
+			STORE_DIRECTORY = args[1]; //director of database environment
+			CRAWLERS = args[4];
 			MAX_SIZE = Integer.parseInt(args[2]); //maximum allowed size for a fetched file
 			if(args.length>3)
 				MAX_PAGES = Integer.parseInt(args[3]); //limit on maximum documents to fetch
-			DBWrapper.initialize(DB_DIRECTORY); //intialize DB environment
+			//DBWrapper.initialize(DB_DIRECTORY); //intialize DB environment
 			crawler = new XPathCrawlerFactory().getCrawler();
 			for(int i=0; i<NO_OF_THREADS; i++) { //create and executing threads
 				XPathCrawlerThread thread = new XPathCrawlerThread(crawler);
@@ -77,9 +118,10 @@ public class XPathCrawler {
 			}
 			crawler.executeTask(); //start the crawler task
 			//crawler.closing();
-			crawler.checkForClose(); //crawler then checks for the condition in for which it would stop
 			
-			DBWrapper.close(); //closing DB environment
+			crawler.checkForClose(); //crawler then checks for the condition in for which it would stop
+			if(SYSTEM_SHUTDOWN) DBWrapper.close(); //closing DB environment 
+			else DBWrapper.commit();
 		} catch (Exception e) {
 			DBWrapper.close();
 			throw e;

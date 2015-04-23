@@ -1,13 +1,23 @@
 package com.datformers.crawler;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Set;
 import java.util.TimeZone;
+import java.util.TreeSet;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -21,11 +31,11 @@ import org.w3c.tidy.Tidy;
 import org.xml.sax.SAXException;
 
 import com.sleepycat.persist.PrimaryIndex;
-
 import com.datformers.crawler.info.RobotsTxtInfo;
 import com.datformers.crawler.resources.DomainRules;
 import com.datformers.crawler.resources.ResourceManagement;
 import com.datformers.crawler.resources.URLQueue;
+import com.datformers.crawler.resources.outgoingMap;
 import com.datformers.storage.DBWrapper;
 import com.datformers.storage.ParsedDocument;
 
@@ -36,8 +46,12 @@ public class XPathCrawlerThread implements Runnable{
 	private ResourceManagement resourceManagement;
 	public String domain; 
 	public String url;
+	public BigInteger docId;
+	public ArrayList<String> outgoingLinks=new ArrayList<String>();
 	public boolean newResource = false;
 	private XPathCrawler parent = null;
+	private static Set<String> visitedURL = new TreeSet<String>();
+	private outgoingMap map;
 	private static String allowedMimeTypes[] = {"text/html","text/xml", "application/xml","application/atom+xml",
 		"application/dash+xml", "application/rdf+xml", "application/rss+xml",
 		"application/soap+xml", "application/xhtml+xml", "application/xop+xml",
@@ -46,7 +60,9 @@ public class XPathCrawlerThread implements Runnable{
 	private boolean isHttps = false; 
 	private DBWrapper wrapper = null;
 	public XPathCrawlerThread(XPathCrawler parent) {
+		visitedURL.clear();
 		this.parent = parent;
+		map = outgoingMap.getInstance();
 		wrapper = new DBWrapper();
 	}
 	/*
@@ -91,7 +107,7 @@ public class XPathCrawlerThread implements Runnable{
 			boolean httpsFlag = false;
 			if(url.startsWith("https")) //Check if url is HTTPS
 				httpsFlag = true;
-
+			Document doc = null;
 			resourceManagement = new ResourceManagement(url, httpsFlag); 
 			resourceManagement.addRequestHeader("User-Agent", "cis455crawler"); //User-agent header for requests
 			resourceManagement.addRequestHeader("Connection", "close"); //Connection close header to make the communications quick
@@ -123,8 +139,8 @@ public class XPathCrawlerThread implements Runnable{
 			resourceManagement.addRequestHeader("If-Modified-Since", checkDate);
 			//make head request  
 			resourceManagement.makeHeadRequest();
-			if(resourceManagement.getResponseStatus()==304) //Checking unmodified date
-				return;
+			if(!(resourceManagement.getResponseStatus()==304)) //Checking unmodified date
+			{	
 
 			//Check mime type conforms
 			String mimeType = resourceManagement.getResponseHeader("Content-Type");
@@ -155,7 +171,7 @@ public class XPathCrawlerThread implements Runnable{
 			InputStream bodyStream = resourceManagement.makeGetRequest();
 
 			//parse File
-			Document doc = null;
+			
 			try {
 				doc = parseDOM(bodyStream);
 			} catch (ParserConfigurationException | SAXException | IOException e) {
@@ -168,9 +184,15 @@ public class XPathCrawlerThread implements Runnable{
 				System.out.println("Some issue occurred in parsing, document object is null");
 				return;
 			}
-
-			//Save Parsed file to database
-			writeFileToDatabase();
+			}else {
+				try {
+					InputStream stream = new ByteArrayInputStream(gotDoc.getDocumentContents().getBytes(StandardCharsets.UTF_8));
+					doc = parseDOM(stream);
+				} catch (ParserConfigurationException | SAXException | IOException e) {
+					e.printStackTrace();
+					System.out.println("Parsing threw error: "+e.getMessage());
+				}
+			}
 
 			if(!resourceManagement.isHtml) //Links are not extracted from files which are not HTML
 				return;
@@ -185,6 +207,10 @@ public class XPathCrawlerThread implements Runnable{
 				System.out.println(Thread.currentThread().getName()+" Pushing to Queue: "+str);
 				queue.add(str); //add extracted links
 			} 
+			
+			//Save Parsed file to database
+			writeFileToDatabase();
+			
 		} catch (Exception e) {
 			System.out.println("ERROR IN TASK: "+e.getMessage());
 			e.printStackTrace();
@@ -198,6 +224,8 @@ public class XPathCrawlerThread implements Runnable{
 	private void writeFileToDatabase() {
 		ParsedDocument document = new ParsedDocument();
 		document.setUrl(url);
+		document.setDocID(SHA1(url));
+		document.setExtractedUrls(outgoingLinks);
 		document.setDocumentContents(resourceManagement.getBody());
 		document.setLastAccessedDate(new Date());
 		PrimaryIndex<String, ParsedDocument> indexDoc = wrapper.getStore().getPrimaryIndex(String.class, ParsedDocument.class);
@@ -270,7 +298,74 @@ public class XPathCrawlerThread implements Runnable{
 				extractedUrls.add(href.getNodeValue());
 			}
 		}
-		return extractedUrls;
+		ArrayList<String> filteredUrls = new ArrayList<String>();
+		synchronized (visitedURL) {
+			for(String url:extractedUrls) {
+				if(!visitedURL.contains(url)) {
+				filteredUrls.add(url);	
+				visitedURL.add(url);	
+				}
+			}
+		}
+		return (divideExtractedLinks(filteredUrls));
+	}
+	
+	public BigInteger convertToBigInt(byte[] data) {
+		StringBuffer buf = new StringBuffer();
+		for (int i = 0; i < data.length; i++) {
+			int halfbyte = (data[i] >>> 4) & 0x0F;
+			int two_halfs = 0;
+			do {
+				if ((0 <= halfbyte) && (halfbyte <= 9))
+					buf.append((char) ('0' + halfbyte));
+				else
+					buf.append((char) ('a' + (halfbyte - 10)));
+				halfbyte = data[i] & 0x0F;
+			} while (two_halfs++ < 1);
+		}
+		return new BigInteger(buf.toString(), 16);
+	}
+
+	/*
+	 * 
+	 * This function is used to calculate the SHA1 hash
+	 */
+	public BigInteger SHA1(String text)  {
+		try {
+		MessageDigest md;
+			md = MessageDigest.getInstance("SHA-1");
+		
+		byte[] sha1hash = new byte[40];
+		md.update(text.getBytes("iso-8859-1"), 0, text.length());
+		sha1hash = md.digest();
+		// String string=convertToHex(sha1hash);
+		return convertToBigInt(sha1hash);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+		// return new BigInteger(sha1hash);
+	}
+	
+	public ArrayList<String> divideExtractedLinks(ArrayList<String> extractedUrls) {
+		outgoingLinks=extractedUrls;
+		ArrayList<String> systemUrls = new ArrayList<String>();
+		BigInteger b = null;
+		for(String url:extractedUrls) {
+				b = SHA1(url);
+				//System.out.println("key:"+key+"="+b);
+			int index = -1;
+			for (int i = 0; i < map.hashRange.length; i++) {
+				if (b.compareTo(map.hashRange[i]) <= 0) {
+					index = i;
+					break;
+				}
+			}
+			if(XPathCrawler.selfIndex==index) systemUrls.add(url);
+			else map.add(index, url);
+		}
+		return systemUrls;
 	}
 	/*
 	 *Method to determine if crawling is permitted given domain specific rules

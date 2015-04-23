@@ -1,5 +1,7 @@
 package com.datformers.storage;
 
+import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Date;
 
 import org.w3c.dom.Document;
@@ -13,9 +15,12 @@ import com.sleepycat.persist.model.PrimaryKey;
 @Entity
 public class ParsedDocument {
 	@PrimaryKey
+	BigInteger docID;
 	private String url; //url of file
 	private String documentContents; //content
 	private Date lastAccessedDate; //last accessed date
+	
+	ArrayList<String> extractedUrls;
 	//TODO: add hashed Doc Id (BigInteger)
 	//TODO: list of extracted URLs
 	public ParsedDocument() {
@@ -38,5 +43,17 @@ public class ParsedDocument {
 	}
 	public void setLastAccessedDate(Date lastAccessedDate) {
 		this.lastAccessedDate = lastAccessedDate;
+	}
+	public BigInteger getDocID() {
+		return docID;
+	}
+	public void setDocID(BigInteger docID) {
+		this.docID = docID;
+	}
+	public ArrayList<String> getExtractedUrls() {
+		return extractedUrls;
+	}
+	public void setExtractedUrls(ArrayList<String> extractedUrls) {
+		this.extractedUrls = extractedUrls;
 	}
 }

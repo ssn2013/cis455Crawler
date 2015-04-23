@@ -17,42 +17,9 @@
     <property name="resources.dir" location="${build.dir}${file.separator}resources"/>
     <property name="conf.dir"      location="${build.dir}${file.separator}conf"/>
 
-    <target name="compile-xpathengine" description="Compiles the XPath engine">
+    <target name="compile" description="Compiles everything">
         <mkdir dir="${classes.dir}"/>
-        <javac srcdir="src/edu/upenn/cis455/xpathengine" destdir="${classes.dir}" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
-            <classpath>
-                <fileset dir="${inputlib.dir}">
-                    <include name="*.jar"/>
-                </fileset>
-            </classpath>
-        </javac>
-    </target>
-    
-    <target name="compile-storage" depends="compile-xpathengine" description="Compiles the storage system">
-        <mkdir dir="${classes.dir}"/>
-        <javac srcdir="src/edu/upenn/cis455/storage" destdir="${classes.dir}" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
-            <classpath>
-                <fileset dir="${inputlib.dir}">
-                    <include name="*.jar"/>
-                </fileset>
-            </classpath>
-        </javac>
-    </target>
-    
-    <target name="compile-crawler" depends="compile-xpathengine,compile-storage" description="Compiles the crawler">
-        <mkdir dir="${classes.dir}"/>
-        <javac srcdir="src/edu/upenn/cis455/crawler" destdir="${classes.dir}" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
-            <classpath>
-                <fileset dir="${inputlib.dir}">
-                    <include name="*.jar"/>
-                </fileset>
-            </classpath>
-        </javac>
-    </target>
-    
-    <target name="compile-servlet" depends="compile-xpathengine,compile-storage" description="Compiles the servlet">
-        <mkdir dir="${classes.dir}"/>
-        <javac srcdir="src/edu/upenn/cis455/servlet" destdir="${classes.dir}" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
+        <javac srcdir="src" destdir="${classes.dir}" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
             <classpath>
                 <fileset dir="${inputlib.dir}">
                     <include name="*.jar"/>
@@ -73,7 +40,7 @@
       </javac>
     </target>
     
-    <target name="test" depends="compile-tests,compile-crawler,compile-servlet" description="Run tests">
+    <target name="test" depends="compile-tests,compile" description="Run tests">
       <java failonerror="true" fork="true" classname="junit.textui.TestRunner">
         <classpath>
           <pathelement location="${test-classes.dir}"/>
@@ -88,29 +55,19 @@
   
     <target name="clean" description="Deletes all the compiled files">
         <delete dir="${build.target.dir}"/>
-        <delete file="crawler.jar"/>
-        <delete file="servlet.war"/>
-        <delete file="submit-hw2.zip"/>
+        <delete file="crawler.war"/>
+        <delete file="master.war"/>
     </target>
     
-    <target name="crawler-jar" depends="compile-crawler" description="Makes the JAR file for the crawler">
-        <delete file="crawler.jar"/>
-        <jar destfile="crawler.jar" update="true">
-            <fileset dir="${classes.dir}">
-                <include name="**/*.class"/>
-            </fileset>
-        </jar>
-    </target>
-
-    <target name="servlet-war" depends="compile-servlet" description="Makes the WAR file for the servlet">
-        <delete file="servlet.war"/>
-        <copy file="${conf.dir}${file.separator}web.xml" tofile="${web-inf.dir}${file.separator}web.xml" overwrite="true" />
+    <target name="crawler-war" depends="compile" description="Makes war for crawler">
+        <delete file="crawler.war"/>
+        <copy file="${conf.dir}${file.separator}crawler${file.separator}web.xml" tofile="${web-inf.dir}${file.separator}web.xml" overwrite="true" />
         <copy todir="${web-inf.lib.dir}" overwrite="true">
             <fileset dir="${inputlib.dir}">
                 <include name="*.jar"/>
             </fileset>
         </copy>
-        <jar destfile="servlet.war" update="true">
+        <jar destfile="crawler.war" update="true">
             <fileset dir="target">
                 <include name="**/*.class"/>
                 <include name="**/*.jar"/>
@@ -119,7 +76,24 @@
         </jar>
     </target>
 
-    <target name="build" depends="crawler-jar,servlet-war">
+    <target name="master-war" depends="compile" description="Makes war for master">
+        <delete file="master.war"/>
+        <copy file="${conf.dir}${file.separator}master${file.separator}web.xml" tofile="${web-inf.dir}${file.separator}web.xml" overwrite="true" />
+        <copy todir="${web-inf.lib.dir}" overwrite="true">
+            <fileset dir="${inputlib.dir}">
+                <include name="*.jar"/>
+            </fileset>
+        </copy>
+        <jar destfile="master.war" update="true">
+            <fileset dir="target">
+                <include name="**/*.class"/>
+                <include name="**/*.jar"/>
+                <include name="WEB-INF/web.xml"/>
+            </fileset>
+        </jar>
+    </target>
+
+    <target name="build" depends="crawler-war,master-war">
     </target>
 
     <target name="pack" description="Create an archive for submission">

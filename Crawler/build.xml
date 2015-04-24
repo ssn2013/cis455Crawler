@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 
 <project name="HW2" default="build" basedir=".">
+    <property name="server.dir" location="/home/sruthi/Downloads/apache-tomcat-6.0.43/webapps"/>
     <property name="shared.root" location="${basedir}"/>
     <property name="file.separator" location="/"/>
     <property name="project.root" location="${basedir}"/>
@@ -91,6 +92,18 @@
                 <include name="WEB-INF/web.xml"/>
             </fileset>
         </jar>
+    </target>
+    
+    <target name="deploy-master" depends="master-war">
+        <delete file="${server.dir}${file.separator}master.war"/>
+        <delete dir="${server.dir}${file.separator}master"/>
+        <move file="master.war" todir="${server.dir}"/>
+    </target>
+    
+    <target name="deploy-worker" depends="crawler-war">
+        <delete file="${server.dir}${file.separator}crawler.war"/>
+        <delete dir="${server.dir}${file.separator}crawler"/>
+        <move file="crawler.war" todir="${server.dir}"/>
     </target>
 
     <target name="build" depends="crawler-war,master-war">

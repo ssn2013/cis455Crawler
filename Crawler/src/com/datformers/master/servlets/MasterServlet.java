@@ -83,9 +83,9 @@ public class MasterServlet extends HttpServlet{
 		for(String key: crawlerStatusMap.keySet()) {
 			HttpClient client = new HttpClient();
 
-			System.out.println("SENDING: STOP CRAWL TO: "+"http://"+key+"/checkpoint"
+			System.out.println("SENDING: STOP CRAWL TO: "+"http://"+key+"/crawler/checkpoint"
 					+"\nPORT: "+ crawlerStatusMap.get(key).getPort());
-			client.makeRequest("http://"+key+"/checkpoint", crawlerStatusMap.get(key).getPort(), new HashMap<String, String>());
+			client.makeRequest("http://"+key+"/crawler/checkpoint", crawlerStatusMap.get(key).getPort(), new HashMap<String, String>());
 		}
 	}
 
@@ -106,9 +106,9 @@ public class MasterServlet extends HttpServlet{
 		for(String key: crawlerStatusMap.keySet()) {
 			HttpClient client = new HttpClient();
 
-			System.out.println("SENDING: STOP CRAWL TO: "+"http://"+key+"/stopcrawler"
+			System.out.println("SENDING: STOP CRAWL TO: "+"http://"+key+"/crawler/stopcrawl"
 					+"\nPORT: "+ crawlerStatusMap.get(key).getPort());
-			client.makeRequest("http://"+key+"/stopcrawler", crawlerStatusMap.get(key).getPort(), new HashMap<String, String>());
+			client.makeRequest("http://"+key+"/crawler/stopcrawl", crawlerStatusMap.get(key).getPort(), new HashMap<String, String>());
 		}
 	}
 
@@ -146,15 +146,25 @@ public class MasterServlet extends HttpServlet{
 				JSONObject requestObject = new JSONObject();
 
 				requestObject.put("urls", new JSONArray(crawlerToUrlMap.get(key)));
-				requestObject.put("crawler", crawlerList);
 				requestObject.put("maxRequests", maxRequests);
+				
+				//And here were are making life more complicated
+				String[] ipSet = new String[crawlerStatusMap.keySet().size()];
+				int i=1;
+				for(String key2: crawlerStatusMap.keySet()) {
+					if(key.equals(key2))
+						continue;
+					ipSet[i++] = key2;
+				}
+				ipSet[0] = key;
+				requestObject.put("crawler", new JSONArray(ipSet));
 
-				System.out.println("SENDING: TO:"+"http://"+key+"/startcrawler"
+				System.out.println("SENDING: TO:"+"http://"+key+"/crawler/startcrawl"
 						+"\nPORT: "+crawlerStatusMap.get(key).getPort()
 						+"\nCONTENT TYPE: "+"application/json"
 						+"\nBODY STRING: "+requestObject.toString());
 
-				client.makePostRequest("http://"+key+"/startcrawler", crawlerStatusMap.get(key).getPort(), "application/json", requestObject.toString());
+				client.makePostRequest("http://"+key+"/crawler/startcrawl", crawlerStatusMap.get(key).getPort(), "application/json", requestObject.toString());
 			}
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();

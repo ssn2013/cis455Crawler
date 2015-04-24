@@ -9,6 +9,7 @@ import java.util.Map;
 
 import com.datformers.mapreduce.util.HttpClient;
 import com.datformers.mapreduce.worker.WorkerServlet;
+import com.datformers.storage.DBWrapper;
 
 /*
  * Class representing thread which updates Master every 10 seconds with status of worker
@@ -30,6 +31,7 @@ public class WorkerStatusUpdator implements Runnable {
 	@Override
 	public void run() {
 		HttpClient client = new HttpClient();
+		
 		try {
 			while (true) {
 				// Code to send workerStatus updates
@@ -43,18 +45,19 @@ public class WorkerStatusUpdator implements Runnable {
 						+ "/master/workerstatus";
 
 				client.makeRequest(urlString, Integer.parseInt(masterPort.trim()), requestParameters);
-				if(client.getResponseCode()==200)
-					System.out.println("WorkerStatusUpdator:run: Successful updation of master at: "+urlString);
-				else 
-					System.out.println("WorkerStatusUpdator:run: SUnsuccessful updation of master at: "+urlString+" returned: "+client.getResponseCode());
+//				if(client.getResponseCode()==200)
+//					System.out.println("WorkerStatusUpdator:run: Successful updation of master at: "+urlString);
+//				else 
+//					System.out.println("WorkerStatusUpdator:run: SUnsuccessful updation of master at: "+urlString+" returned: "+client.getResponseCode());
 
 				// Now Sleep
 				Thread.sleep(10000);
 			}
 		} catch (InterruptedException ie) {
-			ie.printStackTrace();
-			System.out.println("Timed Updator of Worker interrupted: "
-					+ ie.getMessage());
+		
+//			ie.printStackTrace();
+//			System.out.println("Timed Updator of Worker interrupted: "
+//					+ ie.getMessage());
 		}
 	}
 

@@ -62,7 +62,6 @@ public class XPathCrawlerThread implements Runnable{
 	public XPathCrawlerThread(XPathCrawler parent) {
 		visitedURL.clear();
 		this.parent = parent;
-		map = outgoingMap.getInstance();
 		wrapper = new DBWrapper();
 	}
 	/*
@@ -85,7 +84,7 @@ public class XPathCrawlerThread implements Runnable{
 				String url = queue.getUrl();
 				if(url==null) 
 					return;
-				System.out.println(Thread.currentThread().getName()+" FETCHED URL FROM QUEUE: "+url);
+				//System.out.println(Thread.currentThread().getName()+" FETCHED URL FROM QUEUE: "+url);
 				this.domain = getDomain(url);
 				this.url = url;
 				if(parent.getRulesForDomain(domain)==null) //A url is unlikely to have domain specific rules if it's fetched the first time
@@ -95,8 +94,8 @@ public class XPathCrawlerThread implements Runnable{
 				executeTask(); //task of the thread
 			}
 		} catch (InterruptedException e) {
-			System.out.println("Crawler thread got interrupted :(");
-			e.printStackTrace();
+			//System.out.println("Crawler thread got interrupted :(");
+			//e.printStackTrace();
 		}
 	}
 	/*
@@ -105,6 +104,7 @@ public class XPathCrawlerThread implements Runnable{
 	public void executeTask() {
 		try {
 			boolean httpsFlag = false;
+			boolean writeToDB = false;
 			if(url.startsWith("https")) //Check if url is HTTPS
 				httpsFlag = true;
 			Document doc = null;
@@ -124,10 +124,14 @@ public class XPathCrawlerThread implements Runnable{
 			//validate crawling with robots.txt rules
 			if(!isCrawlingAllowed(parent.getRulesForDomain(getDomain(url))))
 				return;
-
+			
+			synchronized (visitedURL) {
+				visitedURL.add(url);// adding to url processed set	
+			}
 			//check if in DB, if so add last modified date
-			PrimaryIndex<String, ParsedDocument> indexDocuments = wrapper.getStore().getPrimaryIndex(String.class, ParsedDocument.class);
-			ParsedDocument gotDoc = indexDocuments.get(url);
+			PrimaryIndex<BigInteger, ParsedDocument> indexDocuments = wrapper.getStore().getPrimaryIndex(BigInteger.class, ParsedDocument.class);
+			BigInteger hashUrl=SHA1(url);
+			ParsedDocument gotDoc = indexDocuments.get(hashUrl);
 			String checkDate = null;
 			if(gotDoc!=null) {
 				SimpleDateFormat format1 = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz");
@@ -141,7 +145,7 @@ public class XPathCrawlerThread implements Runnable{
 			resourceManagement.makeHeadRequest();
 			if(!(resourceManagement.getResponseStatus()==304)) //Checking unmodified date
 			{	
-
+				writeToDB=true;
 			//Check mime type conforms
 			String mimeType = resourceManagement.getResponseHeader("Content-Type");
 			boolean isAllowedType = false;
@@ -178,13 +182,13 @@ public class XPathCrawlerThread implements Runnable{
 				e.printStackTrace();
 				System.out.println("Parsing threw error: "+e.getMessage());
 			}
-
 			//extract links
 			if(doc==null) {
 				System.out.println("Some issue occurred in parsing, document object is null");
 				return;
 			}
 			}else {
+				if(resourceManagement.isHtml) {
 				try {
 					InputStream stream = new ByteArrayInputStream(gotDoc.getDocumentContents().getBytes(StandardCharsets.UTF_8));
 					doc = parseDOM(stream);
@@ -192,10 +196,11 @@ public class XPathCrawlerThread implements Runnable{
 					e.printStackTrace();
 					System.out.println("Parsing threw error: "+e.getMessage());
 				}
+				}
 			}
 
-			if(!resourceManagement.isHtml) //Links are not extracted from files which are not HTML
-				return;
+			if(resourceManagement.isHtml) {//Links are not extracted from files which are not HTML
+				
 			ArrayList<String> extractedUrls = extractLinks(doc);
 			URLQueue queue = URLQueue.getInstance(); //url queue
 			
@@ -204,13 +209,19 @@ public class XPathCrawlerThread implements Runnable{
 			for(String str: extractedUrls) {
 				//TODO: check if extracted URL belongs same crawler, if so add to queue
 				//TODO: else add to some other Set for checkpointing phase
-				System.out.println(Thread.currentThread().getName()+" Pushing to Queue: "+str);
+//				System.out.println(Thread.currentThread().getName()+" Pushing to Queue: "+str);
+				//System.out.println("adding to queue");
+//				System.out.println("Adding:"+str);
 				queue.add(str); //add extracted links
-			} 
+				
+			}
+			}
+
 			
 			//Save Parsed file to database
+			if(writeToDB) {
 			writeFileToDatabase();
-			
+			}
 		} catch (Exception e) {
 			System.out.println("ERROR IN TASK: "+e.getMessage());
 			e.printStackTrace();
@@ -223,14 +234,18 @@ public class XPathCrawlerThread implements Runnable{
 	 */
 	private void writeFileToDatabase() {
 		ParsedDocument document = new ParsedDocument();
+		System.out.println("writing to db:"+url);
+		//System.out.println("url seen size="+visitedURL.size());
+		
 		document.setUrl(url);
 		document.setDocID(SHA1(url));
 		document.setExtractedUrls(outgoingLinks);
 		document.setDocumentContents(resourceManagement.getBody());
 		document.setLastAccessedDate(new Date());
-		PrimaryIndex<String, ParsedDocument> indexDoc = wrapper.getStore().getPrimaryIndex(String.class, ParsedDocument.class);
+		PrimaryIndex<BigInteger, ParsedDocument> indexDoc = wrapper.getStore().getPrimaryIndex(BigInteger.class, ParsedDocument.class);
 		indexDoc.put(document);		
 		XPathCrawler.addCounter(); //increase counter of files succesfully fetched and parsed
+		//System.out.println("files written to db="+XPathCrawler.count);
 		if(!newResource) { //update next allowed access time for domain
 			DomainRules domainRules = parent.getRulesForDomain(getDomain(url));
 			domainRules.setNextAccessTime();
@@ -299,14 +314,16 @@ public class XPathCrawlerThread implements Runnable{
 			}
 		}
 		ArrayList<String> filteredUrls = new ArrayList<String>();
+		outgoingLinks=extractedUrls;
 		synchronized (visitedURL) {
 			for(String url:extractedUrls) {
 				if(!visitedURL.contains(url)) {
 				filteredUrls.add(url);	
-				visitedURL.add(url);	
+				//visitedURL.add(url);	
 				}
 			}
 		}
+		//return extractedUrls;
 		return (divideExtractedLinks(filteredUrls));
 	}
 	
@@ -349,7 +366,7 @@ public class XPathCrawlerThread implements Runnable{
 	}
 	
 	public ArrayList<String> divideExtractedLinks(ArrayList<String> extractedUrls) {
-		outgoingLinks=extractedUrls;
+		map = outgoingMap.getInstance();
 		ArrayList<String> systemUrls = new ArrayList<String>();
 		BigInteger b = null;
 		for(String url:extractedUrls) {
@@ -363,7 +380,7 @@ public class XPathCrawlerThread implements Runnable{
 				}
 			}
 			if(XPathCrawler.selfIndex==index) systemUrls.add(url);
-			else map.add(index, url);
+			else map.add(index-1, url);
 		}
 		return systemUrls;
 	}
@@ -378,11 +395,11 @@ public class XPathCrawlerThread implements Runnable{
 		if(disallowedLinks == null)
 			disallowedLinks = rulesForDomain.getRobotsTxtInfo().getDisallowedLinks("*"); //If matches to crawler can't be found, get rules for all
 		if(disallowedLinks==null|| disallowedLinks.size()==0) {
-			System.out.println("Coudn't get disallowed links for *");
+			//System.out.println("Coudn't get disallowed links for *");
 			return false;
 		}
 		if(disallowedLinks.get(0).equalsIgnoreCase("/")) {
-			System.out.println("All crawlers banned");
+			//System.out.println("All crawlers banned");
 			return false;
 		}
 		for(String str: disallowedLinks) {
@@ -390,7 +407,7 @@ public class XPathCrawlerThread implements Runnable{
 				break;
 			else {
 				if(url.contains(str)) {
-					System.out.println("Url matched disallowed pattern: "+str);
+					//System.out.println("Url matched disallowed pattern: "+str);
 					return false;
 				}
 			}

@@ -1,4 +1,4 @@
-package com.datformers.mapreduce.worker;
+	package com.datformers.mapreduce.worker;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -46,27 +46,41 @@ public class WorkerServlet extends HttpServlet {
 	private JobDetails pastJob = null;
 
 	public void init(ServletConfig servletConfig) throws javax.servlet.ServletException {
-		super.init(servletConfig);
+//		super.init(servletConfig);
 		masterIPPort = servletConfig.getInitParameter("master"); //fetch details of master
 		storageDir = servletConfig.getInitParameter("storagedir"); //fetch details of storage directory
 		dbDir = servletConfig.getInitParameter("databasedir"); //fetch details of database directory
 		DBWrapper.initialize(dbDir); //initialize DB environment
+//		DBWrapper.close();
 		port = Integer.parseInt(servletConfig.getInitParameter("port")); //fetch port details
 		String points[] = masterIPPort.split(":");
 		wk = new WorkerStatusUpdator(points[0].trim(), points[1].trim(), port, this); //create thread to send update status calls to master every 10 seconds
 		wkt = new Thread(wk);
 		wkt.start();
 		System.out.println("SERVLET STARTED:");
+		
+		
 	}
 	
 	@Override
 	public void destroy() {
+		System.out.println("this is stopping");
+//		wkt.stop();
+		wkt.interrupt();
+		DBWrapper.close();
+		
 		for(Thread t: threadPool) {
 			if(t!=null)
 				t.interrupt();
 		}
-		wkt.interrupt();
-		super.destroy();
+		for(Thread t: XPathCrawler.subThreads) {
+			if(t!=null)
+				t.interrupt();
+		}
+//		
+		
+//		
+//		super.destroy();
 	}
 
 	/*
@@ -76,10 +90,14 @@ public class WorkerServlet extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response) 
 			throws java.io.IOException
 	{
-		response.setContentType("text/html");
-		PrintWriter out = response.getWriter();
-		out.println("<html><head><title>Worker</title></head>");
-		out.println("<body>Hi, I am the worker!</body></html>");
+		if(request.getPathInfo().contains("stopcrawl")) {
+			processStopCrawl(request, response); //redirect to method handling crawl stop
+			status = "idle";
+		}
+//		response.setContentType("text/html");
+//		PrintWriter out = response.getWriter();
+//		out.println("<html><head><title>Worker</title></head>");
+//		out.println("<body>Hi, I am the worker!</body></html>");
 	}
 
 	/*
@@ -98,9 +116,9 @@ public class WorkerServlet extends HttpServlet {
 		} else if(request.getPathInfo().contains("startcrawl")) {
 			status = "crawling";
 			processRunCrawl(request, response); //redirect to method handling for crawl start	
-		} else if(request.getPathInfo().contains("stopcrawl")) {
-			processStopCrawl(request, response); //redirect to method handling crawl stop
-			status = "idle";
+		}  else if(request.getPathInfo().contains("checkpoint")) {
+			processCreateCheckpoint(request, response); //redirect to method handling crawl stop
+			status = "CheckPointing";
 		} else if(request.getPathInfo().contains("pushdata")) {
 			processPushData(request, response); //redirect to method handling pushdata calls
 		}
@@ -125,10 +143,16 @@ public class WorkerServlet extends HttpServlet {
 
 	private void processStopCrawl(HttpServletRequest request,
 			HttpServletResponse response) {
-		XPathCrawler.SYSTEM_SHUTDOWN=true;
+		System.out.println("STOPPING DIE");
+		XPathCrawler.STOP_CRAWLER=true;
 		
 	}
-	
+
+	private void processCreateCheckpoint(HttpServletRequest request,
+			HttpServletResponse response) {
+		XPathCrawler.STOP_CRAWLER=true;
+		
+	}
 	private void processRunCrawl(HttpServletRequest request,
 			HttpServletResponse response) {
 		try {
@@ -146,32 +170,27 @@ public class WorkerServlet extends HttpServlet {
 			String maxRequests=obj.getString("maxRequests");
 					
 			//start the crawling
-			String delim=";;|;;";
-			String args[]=new String[5];
-			args[0]="";
+			String args[]=new String[3];
 			if (url != null) {
 				seedUrl = new String[url.length()];
 				for (int i = 0; i < url.length(); i++) {
 					// seedUrl[i] = url.getJSONObject(i).getString("host");
-					args[0]+= url.getJSONObject(i).toString()+delim;
+					seedUrl[i]= url.getString(i).toString();
+//					args[0]+= url.getString(i).toString()+delim;
 				}
 				//removing last occurrence of delim
-				args[0]=args[0].substring(0,args[0].lastIndexOf(delim));
 			}
-			
-			args[1]=storageDir;
-			args[2]=""+1;
-			args[3]=maxRequests;
-			args[4]="";
+			String workers[]=new String [crawlWorkers.length()];
+			args[0]=storageDir;
+			args[1]=""+5;
+			args[2]=maxRequests;
 			for (int i = 0; i < crawlWorkers.length(); i++) {
 				// workers[i] = crawlWorkers.getJSONObject(i).getString("host");
-				args[4]+=crawlWorkers.getJSONObject(i).toString()+delim;
+				workers[i]=crawlWorkers.getString(i).toString();
 			}
 			
-			//removing last occurrence of delim
-			args[4]=args[4].substring(0,args[4].lastIndexOf(delim));
 			
-			CrawlerStartHelper myrunnable = new CrawlerStartHelper(args);
+			CrawlerStartHelper myrunnable = new CrawlerStartHelper(args,seedUrl,workers);
 	     	new Thread(myrunnable).start();
 			
 		} catch (Exception e) {
@@ -364,14 +383,18 @@ public class WorkerServlet extends HttpServlet {
 
 class CrawlerStartHelper implements Runnable {
 	private String args[];
-	CrawlerStartHelper(String []ar) {
+	private String urls[];
+	private String workers[];
+	CrawlerStartHelper(String []ar,String []u,String []w) {
+	urls=u;
 	args=ar;
+	workers=w;
 	}
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
 		try {
-			XPathCrawler.main(args);
+			XPathCrawler.start(args,urls,workers);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

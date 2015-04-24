@@ -208,7 +208,7 @@ public class ResourceManagement {
 			outWriter = new PrintWriter(connectionOutputStream, true);
 			method = "GET";
 			String requestString = getRequestString(); //Request as a string
-			System.out.println("Making request: "+requestString);
+			//System.out.println("Making request: "+requestString);
 			outWriter.println(requestString); //making the request
 			outWriter.flush();
 			parseResponse(); //Parsing the response, or fetched HTML/XML file
@@ -254,7 +254,7 @@ public class ResourceManagement {
 			outWriter = new PrintWriter(connectionOutputStream, true);
 			method = "HEAD";
 			String requestString = getRequestString(); //Request as a string
-			System.out.println("Making request: "+requestString);
+//			System.out.println("Making request: "+requestString);
 			outWriter.println(requestString);
 			outWriter.flush();
 			parseResponse(); //Parsing the response, or fetched HTML/XML file

@@ -35,6 +35,7 @@ public class DBWrapper {
 			// Open the environment and entity store
 			myEnv = new Environment(new File(environment), myEnvConfig);
 			store = new EntityStore(myEnv, "EntityStore", storeConfig);
+		
 		} catch(DatabaseException dbe) {
 			System.err.println("Error opening environment and store: " +
 					dbe.toString());
@@ -56,11 +57,12 @@ public class DBWrapper {
 		store.sync();
 	}
 	public static void close() {
-		System.out.println("\nClose method called");
+		//System.out.println("\nClose method called");
+		if(!dbOpen) return;
 		dbOpen=false;
 		if (store != null) {
 			try {
-				System.out.println("\nGonna close wrapper");
+				//System.out.println("\nGonna close wrapper");
 				store.close();
 			} catch(DatabaseException dbe) {
 				System.err.println("\nError closing store: " +
@@ -72,8 +74,12 @@ public class DBWrapper {
 			try {
 				// Finally, close environment.
 				System.out.println("\nGonna close Environment");
+				myEnv.cleanLog();
+				
 				myEnv.close();
-			} catch(DatabaseException dbe) {
+				
+			} catch(Exception dbe) {
+				
 				System.err.println("\nError closing MyDbEnv: " +
 						dbe.toString());
 				System.exit(-1);

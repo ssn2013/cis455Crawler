@@ -105,6 +105,7 @@ public class HttpClient {
 	 */
 	public InputStream makeRequest(String URL, int port, Map<String, String>  urlParams) {
 		try {
+			
 			this.method = "GET";
 			this.URL = URL;
 			this.hostName = extractHostName(); //Extract host name from URL
@@ -121,18 +122,19 @@ public class HttpClient {
 				}
 			}
 			this.URL = buf.toString();
-
 			String requestString = getRequestHeadersString()+'\n'; //Form the request headers
-
+			
 			//OPen socket 
+		
 			Socket socket = new Socket(this.hostName.split(":")[0].trim(), port);
+			
 			outputStream = socket.getOutputStream();
 			inputStream = socket.getInputStream();
 			outputStream.write(requestString.getBytes()); //write request
 			outputStream.flush();
 			parseResponse();
 		} catch (Exception e) {
-
+			e.printStackTrace();
 		} finally {
 			return responseBodyStream;
 		}
@@ -158,7 +160,7 @@ public class HttpClient {
 			outputStream.write(requestString.getBytes());
 			outputStream.flush();
 			parseResponse();
-			System.out.println("In HttpClient:makePostRequest: Request made: "+requestString+" Response: "+responseCode);
+			//System.out.println("In HttpClient:makePostRequest: Request made: "+requestString+" Response: "+responseCode);
 		} catch (Exception e) {
 
 		} finally {

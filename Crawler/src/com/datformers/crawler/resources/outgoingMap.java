@@ -43,19 +43,18 @@ public class outgoingMap {
 	public static void createInstance(String []keys) {
 		queue=new outgoingMap();
 		queue.outgoingCrawlQueue= new ArrayList<Set<String>>(keys.length);
-		for(int i=0;i<keys.length;i++) {
-			try {
-				if(keys[i].contains(InetAddress.getLocalHost().toString())) {
-					XPathCrawler.selfIndex=i;
-					continue;
-				}
-			} catch (UnknownHostException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+		XPathCrawler.selfIndex=0;
+		for(int i=1;i<keys.length;i++) {
+			
+//				if(keys[i].contains("158.130.108.8")) {
+//					XPathCrawler.selfIndex=i;
+//					continue;
+//				}
+			
 			Set<String> tmp=new HashSet<String>();
 			queue.outgoingCrawlQueue.add(tmp);
 		}
+		queue.hashRange=new BigInteger[keys.length];
 		queue.doHashDiv(keys);
 	}
 	public static outgoingMap getInstance() { 

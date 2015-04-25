@@ -1,4 +1,4 @@
-package com.datformers.master.servlets;
+package com.datformers.servlets;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -20,7 +20,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONArray;
 
-import com.datformers.master.resources.CrawlerStatus;
+import com.datformers.resources.CrawlerStatus;
 import com.datformers.resources.HttpClient;
 
 public class MasterServlet extends HttpServlet{

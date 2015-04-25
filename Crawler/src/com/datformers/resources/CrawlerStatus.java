@@ -1,4 +1,4 @@
-package com.datformers.master.resources;
+package com.datformers.resources;
 
 public class CrawlerStatus {
 	private String ipAddress;

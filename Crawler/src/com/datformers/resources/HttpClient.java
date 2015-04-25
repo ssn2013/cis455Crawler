@@ -6,175 +6,359 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.net.Socket;
-import java.util.ArrayList;
+import java.io.PrintWriter;
+import java.net.*;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+
+import javax.net.ssl.HttpsURLConnection;
+
+import org.w3c.dom.Document;
 
 /*
- * Class to handle all HTTP requests and their responses
+ * Class handles all HTTP calls: requests and responses
  */
 public class HttpClient {
-	private Map<String, String> requestHeaders = new HashMap<String, String>();
-	private Map<String, String> responseHeaders = new HashMap<String, String>();
-	private InputStream inputStream = null;
-	private OutputStream outputStream = null;
-	private InputStream responseBodyStream = null;
-	private int responseCode;
-	private String method;
-	private String URL;
-	private String hostName;
-	public String getRequestHeader(String key) {
-		return requestHeaders.get(key);
-	}
-	public String getResponseHeader(String key) {
-		return responseHeaders.get(key);
-	}
-	public int getResponseCode() {
-		return responseCode;
-	}
-	public void addRequestHeader(String key, String value) { //add request header
+	public String url;
+	private HashMap<String, String> requestHeaders = new HashMap<String, String>();
+	private HashMap<String, String> responseHeaders = new HashMap<String, String>();
+	private OutputStream connectionOutputStream = null;
+	private InputStream connectionInputStream = null;
+	private InputStream bodyInputStream = null;
+	private String host = null;
+	public String method = "GET";
+	public String version = "HTTP/1.1";
+	public boolean isHtml;
+	private int responseStatusCode = -1;
+	private String body;
+	private boolean isHTTPS = false; 
+	private Socket socket; 
+	private HttpsURLConnection connection = null;
+	
+	/*
+	 * Method to add and keep track of header requests
+	 */
+	public void addRequestHeader(String key, String value) {
 		if(requestHeaders.containsKey(key)) {
-			String valueNew = requestHeaders.get(key)+", "+value.trim();
-			requestHeaders.put(key.trim(), valueNew);
-		} else {
-			requestHeaders.put(key.trim(), value.trim());
-		}
-	}
-	public void addResponseHeader(String key, String value) { //add response header (called while parsing response)
-		if(responseHeaders.containsKey(key)) {
-			String valueNew = responseHeaders.get(key)+", "+value.trim();
-			responseHeaders.put(key.trim(), valueNew);
-		} else {
-			responseHeaders.put(key.trim(), value.trim());
-		}
+			String headerValue = requestHeaders.get(key);
+			headerValue += (", "+value);
+			requestHeaders.put(key, headerValue);
+		} else
+			requestHeaders.put(key, value);
 	}
 	
 	/*
-	 * Method returns an HTTP request (string) of the headers. For POST requests the body has to be appended to this string
+	 *Constructor 
 	 */
-	private String getRequestHeadersString() {
-		StringBuffer buf = new StringBuffer();
-		buf.append(method+" "+URL+" HTTP/1.1\n");
-		buf.append("Host: "+hostName+'\n');
-		buf.append("Connection: close"+'\n'); 
-		for(String key: requestHeaders.keySet()) {
-			buf.append(key+": "+requestHeaders.get(key)+"\n");
-		}
-		return buf.toString();
+	public HttpClient() {
+		
 	}
+	
 	/*
-	 * Method to parse the response
+	 * Method extracts host name for the given URL
 	 */
-	private void parseResponse() {
-		//parse set of headers
-		try {
-			BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+	public String getHost() {
+		return host;
+	}
+	
+	public String getHost(String url) {
+		host = url.substring(url.indexOf('/')+2); //remove protocol part
+		if(host.contains("/"))
+			host = host.substring(0, host.indexOf('/'));//remove any additional paths 
+		return host;
+	}
+	
+	/*
+	 * Method constructs the entire request object with given headers and returns a string
+	 */
+	public String getRequestString() {
+		StringBuffer requestBuffer = new StringBuffer(method+" "+url+" "+version+'\n'); //first line of request
+		requestBuffer.append("Host: "+getHost()+"\n"); //Mandatory "host" header for Version 1.1
+		for(String key: requestHeaders.keySet()) 
+			requestBuffer.append(key+": "+requestHeaders.get(key)+"\n");
+		return requestBuffer.toString();
+	}
+	
+	/*
+	 * Method used to add and store response headers
+	 */
+	public void addResponseHeaders(String key, String value) {
+		if(responseHeaders.containsKey(key)) { //If key exists, append new value to the comma separated values of the header
+			String headerValue = responseHeaders.get(key);
+			headerValue += (", "+value);
+			responseHeaders.put(key, headerValue);
+		} else
+			responseHeaders.put(key, value);
+	}
+	
+	/*
+	 * Method to fetch a particular response header value
+	 */
+	public String getResponseHeader(String key) {
+		return responseHeaders.get(key);
+	}
+	
+	/*
+	 * Method to get all response headers
+	 */
+	public HashMap<String, String> getAllResponseHeaders() {
+		return responseHeaders;
+	}
+	
+	/*
+	 * Method to fetch response status (i.e status code)
+	 */
+	public int getResponseStatusCode() {
+		return responseStatusCode;
+	}
+	
+	/*
+	 * Method to fetch body of response as a string
+	 */
+	public String getBody() {
+		return body;
+	}
+	
+	/*
+	 * Method parses the response into headers and body
+	 */
+	public void parseResponse() throws IOException {
+		BufferedReader br = null;
+		if(isHTTPS) { //https use a connection objects and handle headers and body separately
+			Map<String, List<String>> headers = connection.getHeaderFields();
+			for(String key: headers.keySet()) {
+				for(String value: headers.get(key)) {
+					addResponseHeaders(key, value);
+				}
+			}
+			responseStatusCode = connection.getResponseCode();
+			if(connectionInputStream==null) //Input stream having body
+				System.out.println("Connection null inside parseResponses");
+			/*
+			bodyInputStream = connectionInputStream;
+			if(bodyInputStream==null)
+				System.out.println("boyd in pustream null in parse response");
+				*/
+			br = new BufferedReader(new InputStreamReader(connectionInputStream));
+		} else { //For http calls
+			br = new BufferedReader(new InputStreamReader(connectionInputStream));
 			String line = null;
 			while((line = br.readLine())!=null ) { //Read line by line and parse response
 				if(line.equals("")) //End of header portion, marked with a new line
 					break;
 				if(line.contains(":")) { //Headers (headers contain :)
 					String elements[] = line.split(":"); //splitting of header to key and value
-					addResponseHeader(elements[0].trim(), elements[1].trim());
+					addResponseHeaders(elements[0].trim(), elements[1].trim());
 				} else {
 					String elements[] = line.split(" "); //First line of request
-					responseCode = Integer.parseInt(elements[1]); //Parsing and storing response status
+					responseStatusCode = Integer.parseInt(elements[1]); //Parsing and storing response status
 				}
 			}
+			
 
-			//reading body
-			StringBuffer bodyBuffer = new StringBuffer();
-			String bodyLine = null;
-			while((bodyLine = br.readLine())!=null) {
-				bodyBuffer.append(bodyLine+'\n');
-			}
-			String body = bodyBuffer.toString();
-			if(body!=null && body.length()>0)
-				responseBodyStream = new ByteArrayInputStream(body.getBytes()); //Create an InputStream of the body and return the same
-			else
-				responseBodyStream = null;
-		} catch(IOException ie) {
-			System.out.println("Parsing Response got exception: "+ie.getMessage());
 		}
-
-	}
-	/*
-	 * Method to make all requests except POST. The method takes the URL, port and parametes (as a map)
-	 */
-	public InputStream makeRequest(String URL, int port, Map<String, String>  urlParams) {
-		try {
-			
-			this.method = "GET";
-			this.URL = URL;
-			this.hostName = extractHostName(); //Extract host name from URL
-
-			//Creating proper URL String
-			StringBuffer buf = new StringBuffer(this.URL);
-			boolean first = true;
-			for(String key: urlParams.keySet()) {
-				if(first) {
-					buf.append("?"+key.trim()+"="+urlParams.get(key).trim());
-					first = false;
-				} else {
-					buf.append("&"+key.trim()+"="+urlParams.get(key).trim());
-				}
-			}
-			this.URL = buf.toString();
-			String requestString = getRequestHeadersString()+'\n'; //Form the request headers
-			
-			//OPen socket 
 		
-			Socket socket = new Socket(this.hostName.split(":")[0].trim(), port);
+		//reading body
+		StringBuffer bodyBuffer = new StringBuffer();
+		String bodyLine = null;
+		while((bodyLine = br.readLine())!=null) {
+			bodyBuffer.append(bodyLine+'\n');
+		}
+		body = bodyBuffer.toString();
+		bodyInputStream = new ByteArrayInputStream(body.getBytes()); //Create an InputStream of the body and return the same
+		
+		//Setting as HTML or not based on content-type
+		String value = getResponseHeader("Content-Type"); 
+		//System.out.println("IN PARSE RESPONSE: URL: "+url+" Content-type:-"+value);
+		if(value == null)
+			isHtml = true;
+		else {
+			if(value.contains("text/html"))
+				isHtml = true;
+		}
+	}
+
+	/*
+	 * Method connects to the given host, makes a GET request, fetches the data and parses the response
+	 * It returns an InputStream of the body that can be parsed 
+	 */
+	public InputStream makeGetRequest(String URL, int port, Map<String, String>  urlParams) { 
+		PrintWriter outWriter = null;
+		Socket socket = null;
+		this.url = URL;
+		
+		//newly added
+		String host = getHost(URL);
+		if(URL.startsWith("https"))
+			isHTTPS = true;
+		else
+			isHTTPS = false;
+		
+		try {
+			//Add necessary parameters to URL and get request string
+			if(urlParams!=null && !urlParams.isEmpty())
+			{
+				//Creating proper URL String
+				StringBuffer buf = new StringBuffer(this.url);
+				boolean first = true;
+				for(String key: urlParams.keySet()) {
+					if(first) {
+						buf.append("?"+key.trim()+"="+urlParams.get(key).trim());
+						first = false;
+					} else {
+						buf.append("&"+key.trim()+"="+urlParams.get(key).trim());
+					}
+				}
+				this.url = buf.toString();
+			}
 			
-			outputStream = socket.getOutputStream();
-			inputStream = socket.getInputStream();
-			outputStream.write(requestString.getBytes()); //write request
-			outputStream.flush();
-			parseResponse();
-		} catch (Exception e) {
+			if(!isHTTPS) {
+				socket = new Socket(host, port);
+				if(port==80 && socket==null)
+					socket = new Socket(host, 8080); //if connection to port 80 fails, try 8080
+				connectionOutputStream = socket.getOutputStream();
+				connectionInputStream = socket.getInputStream();
+				outWriter = new PrintWriter(connectionOutputStream, true);
+				method = "GET";
+				 //Request as a string
+				String requestString = getRequestString();
+				outWriter.println(requestString); //making the request
+				outWriter.flush();
+			} else { //HTTPSUrlConnection used for https request
+				URL oracle = new URL(url);
+				connection = (HttpsURLConnection)oracle.openConnection();
+				//Write Headers
+				for(Entry<String, String> entry: requestHeaders.entrySet()) {
+					connection.addRequestProperty(entry.getKey(), entry.getValue());
+				}
+				connection.setDoOutput(true);
+				connectionOutputStream = connection.getOutputStream(); //get output stream
+				connectionInputStream = connection.getInputStream(); //get input stream
+				if(connectionInputStream==null)
+					System.out.println("CONNECTION INPUT STREAM NULL");
+			}
+			parseResponse(); //Parsing the response, or fetched HTML/XML file
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
-			return responseBodyStream;
+			if(bodyInputStream==null)
+				System.out.println("BODY INPUT STREAM: NULL");
+			if(socket!=null && !socket.isClosed())
+				try {
+					socket.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			return bodyInputStream;
 		}
 	}
+	
 	/*
-	 * Method to handle POST requests and their responses. It does the same functionality as the above method with the additional work of handling 
-	 * the body
+	 * Method to make head request.
+	 * Unlike the previous method it does not return an InputStream of the body
 	 */
+	public void makeHeadRequest(String URL, int port, Map<String, String>  urlParams) {
+		PrintWriter outWriter = null;
+		Socket socket = null;
+		this.url = URL;
+		
+		//newly added
+		String host = getHost(URL);
+		if(URL.startsWith("https"))
+			isHTTPS = true;
+		else
+			isHTTPS = false;
+		
+		try {
+			//Add necessary parameters to URL and get request string
+			if(urlParams!=null && !urlParams.isEmpty())
+			{
+				//Creating proper URL String
+				StringBuffer buf = new StringBuffer(this.url);
+				boolean first = true;
+				for(String key: urlParams.keySet()) {
+					if(first) {
+						buf.append("?"+key.trim()+"="+urlParams.get(key).trim());
+						first = false;
+					} else {
+						buf.append("&"+key.trim()+"="+urlParams.get(key).trim());
+					}
+				}
+				this.url = buf.toString();
+			}
+			
+			if(!isHTTPS) {
+				socket = new Socket(host, port);
+				if(port==80 && socket==null)
+					socket = new Socket(host, 8080); //if connection to port 80 fails, try 8080
+				connectionOutputStream = socket.getOutputStream();
+				connectionInputStream = socket.getInputStream();
+				outWriter = new PrintWriter(connectionOutputStream, true);
+				method = "HEAD";
+				 //Request as a string
+				String requestString = getRequestString();
+				outWriter.println(requestString); //making the request
+				outWriter.flush();
+			} else { //HTTPSUrlConnection used for https request
+				URL oracle = new URL(url);
+				connection = (HttpsURLConnection)oracle.openConnection();
+				//Write Headers
+				for(Entry<String, String> entry: requestHeaders.entrySet()) {
+					connection.addRequestProperty(entry.getKey(), entry.getValue());
+				}
+				connection.setDoOutput(true);
+				connectionOutputStream = connection.getOutputStream(); //get output stream
+				connectionInputStream = connection.getInputStream(); //get input stream
+				if(connectionInputStream==null)
+					System.out.println("CONNECTION INPUT STREAM NULL");
+			}
+			parseResponse(); //Parsing the response, or fetched HTML/XML file
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			if(bodyInputStream==null)
+				System.out.println("BODY INPUT STREAM: NULL");
+			if(socket!=null && !socket.isClosed())
+				try {
+					socket.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+		}
+	}
+	
 	public InputStream makePostRequest(String URL, int port, String contentType, String body) {
 		try {
 			this.method = "POST";
-			this.URL = URL;
-			this.hostName = extractHostName();
+			this.url = URL;
+			this.host = getHost(URL);
 			addRequestHeader("Content-Type", contentType); //details specific to request body
 			addRequestHeader("Content-Length", ""+body.length());
-			String requestString = getRequestHeadersString();
+			String requestString = getRequestString();
 			requestString += '\n'+body;
-
+			
 			//Open socket and do read and write
-			Socket socket = new Socket(this.hostName.split(":")[0].trim(), port);
-			outputStream = socket.getOutputStream();
-			inputStream = socket.getInputStream();
-			outputStream.write(requestString.getBytes());
-			outputStream.flush();
+			Socket socket = new Socket(this.host.split(":")[0].trim(), port);
+			connectionOutputStream = socket.getOutputStream();
+			connectionInputStream = socket.getInputStream();
+			connectionOutputStream.write(requestString.getBytes());
+			connectionOutputStream.flush();
 			parseResponse();
 			//System.out.println("In HttpClient:makePostRequest: Request made: "+requestString+" Response: "+responseCode);
 		} catch (Exception e) {
 
 		} finally {
-			return responseBodyStream;
+			return bodyInputStream;
 		}
 	}
-	/*
-	 * Method to extract hostname from a URL
-	 */
-	private String extractHostName() {
-		String host = URL.substring(URL.indexOf('/')+2); //remove protocol part
-		if(host.contains("/"))
-			host = host.substring(0, host.indexOf('/'));//remove any additional paths 
-		return host;
 
-	}
 }

@@ -121,7 +121,7 @@ public class MasterServlet extends HttpServlet{
 
 			System.out.println("SENDING: STOP CRAWL TO: "+"http://"+key+"/crawler/checkpoint"
 					+"\nPORT: "+ crawlerStatusMap.get(key).getPort());
-			client.makeRequest("http://"+key+"/crawler/checkpoint", crawlerStatusMap.get(key).getPort(), new HashMap<String, String>());
+			client.makeGetRequest("http://"+key+"/crawler/checkpoint", crawlerStatusMap.get(key).getPort(), new HashMap<String, String>());
 		}
 		crawl_status = "checkpoint";
 	}
@@ -146,7 +146,7 @@ public class MasterServlet extends HttpServlet{
 
 			System.out.println("SENDING: STOP CRAWL TO: "+"http://"+key+"/crawler/stopcrawl"
 					+"\nPORT: "+ crawlerStatusMap.get(key).getPort());
-			client.makeRequest("http://"+key+"/crawler/stopcrawl", crawlerStatusMap.get(key).getPort(), new HashMap<String, String>());
+			client.makeGetRequest("http://"+key+"/crawler/stopcrawl", crawlerStatusMap.get(key).getPort(), new HashMap<String, String>());
 		}
 		crawl_status = "idle";
 	}

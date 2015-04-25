@@ -6,7 +6,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.datformers.mapreduce.util.HttpClient;
+import com.datformers.resources.HttpClient;
 import com.datformers.servlets.WorkerServlet;
 
 /*
@@ -38,7 +38,7 @@ public class PushDataThread implements Runnable{
 				url = new URL(urlString);
 				String content = fileManagement.getSpoolOutFileContentForWorker(index);
 				client.makePostRequest(urlString, Integer.parseInt(ipAddrStr.split(":")[1]), "text/plain", content);
-				int successStory = client.getResponseCode();
+				int successStory = client.getResponseStatusCode();
 				System.out.println("PushDataThread:run: Made push requet to: "+ipAddrStr);
 				index++;
 			}	

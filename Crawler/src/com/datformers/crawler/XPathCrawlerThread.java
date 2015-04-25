@@ -33,9 +33,9 @@ import org.xml.sax.SAXException;
 import com.sleepycat.persist.PrimaryIndex;
 import com.datformers.crawler.info.RobotsTxtInfo;
 import com.datformers.crawler.resources.DomainRules;
-import com.datformers.crawler.resources.ResourceManagement;
 import com.datformers.crawler.resources.URLQueue;
 import com.datformers.crawler.resources.OutgoingMap;
+import com.datformers.resources.HttpClient;
 import com.datformers.storage.DBWrapper;
 import com.datformers.storage.ParsedDocument;
 
@@ -43,7 +43,7 @@ import com.datformers.storage.ParsedDocument;
  * Class of individual crawler threads that actually process the file
  */
 public class XPathCrawlerThread implements Runnable{
-	private ResourceManagement resourceManagement;
+	private HttpClient resourceManagement;
 	public String domain; 
 	public String url;
 	public BigInteger docId;
@@ -103,12 +103,9 @@ public class XPathCrawlerThread implements Runnable{
 	 */
 	public void executeTask() {
 		try {
-			boolean httpsFlag = false;
 			boolean writeToDB = false;
-			if(url.startsWith("https")) //Check if url is HTTPS
-				httpsFlag = true;
 			Document doc = null;
-			resourceManagement = new ResourceManagement(url, httpsFlag); 
+			resourceManagement = new HttpClient(); 
 			resourceManagement.addRequestHeader("User-Agent", "cis455crawler"); //User-agent header for requests
 			resourceManagement.addRequestHeader("Connection", "close"); //Connection close header to make the communications quick
 
@@ -142,8 +139,8 @@ public class XPathCrawlerThread implements Runnable{
 			
 			resourceManagement.addRequestHeader("If-Modified-Since", checkDate);
 			//make head request  
-			resourceManagement.makeHeadRequest();
-			if(!(resourceManagement.getResponseStatus()==304)) //Checking unmodified date
+			resourceManagement.makeHeadRequest(url, 80, null);
+			if(!(resourceManagement.getResponseStatusCode()==304)) //Checking unmodified date
 			{	
 				writeToDB=true;
 			//Check mime type conforms
@@ -172,7 +169,7 @@ public class XPathCrawlerThread implements Runnable{
 			}
 
 			//make get request
-			InputStream bodyStream = resourceManagement.makeGetRequest();
+			InputStream bodyStream = resourceManagement.makeGetRequest(url, 80, null);
 
 			//parse File
 			
@@ -437,14 +434,14 @@ public class XPathCrawlerThread implements Runnable{
 			isHttps = true;
 		}
 		String robotsUrl = protocol+getDomain(url)+"/robots.txt";
-		ResourceManagement resourceManagement = new ResourceManagement(robotsUrl, isHttps);
+		HttpClient resourceManagement = new HttpClient();
 		resourceManagement.addRequestHeader("User-Agent", "cis455crawler");
 		resourceManagement.addRequestHeader("Connection", "close");
-		resourceManagement.makeGetRequest();
-		if(resourceManagement.getResponseStatus()!=200)
+		resourceManagement.makeHeadRequest(robotsUrl, 80, null);
+		if(resourceManagement.getResponseStatusCode()!=200)
 			return null;
 		RobotsTxtInfo robotsTxtInfo = new RobotsTxtInfo();
-		InputStream robotsStream = resourceManagement.makeGetRequest();
+		InputStream robotsStream = resourceManagement.makeGetRequest(robotsUrl, 80, null);
 		BufferedReader br = new BufferedReader(new InputStreamReader(robotsStream));
 		String line = null;
 		String presentUserAgent = null;

@@ -7,7 +7,7 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.datformers.mapreduce.util.HttpClient;
+import com.datformers.resources.HttpClient;
 import com.datformers.servlets.WorkerServlet;
 import com.datformers.storage.DBWrapper;
 
@@ -44,7 +44,7 @@ public class WorkerStatusUpdator implements Runnable {
 				String urlString = "http://" + masterIP + ":" + masterPort
 						+ "/master/workerstatus";
 				System.out.println("WORKER: KILL ME: STATUS: "+parent.STATUS);
-				client.makeRequest(urlString, Integer.parseInt(masterPort.trim()), requestParameters);
+				client.makeGetRequest(urlString, Integer.parseInt(masterPort.trim()), requestParameters);
 //				if(client.getResponseCode()==200)
 //					System.out.println("WorkerStatusUpdator:run: Successful updation of master at: "+urlString);
 //				else 

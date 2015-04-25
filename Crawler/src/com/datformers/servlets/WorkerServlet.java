@@ -15,12 +15,12 @@ import org.json.JSONObject;
 
 import com.datformers.crawler.XPathCrawler;
 import com.datformers.crawler.resources.OutgoingMap;
-import com.datformers.mapreduce.util.HttpClient;
 import com.datformers.mapreduce.util.JobDetails;
 import com.datformers.mapreduce.worker.resources.FileManagement;
 import com.datformers.mapreduce.worker.resources.PushDataThread;
 import com.datformers.mapreduce.worker.resources.WorkerStatusUpdator;
 import com.datformers.mapreduce.worker.resources.WorkerThread;
+import com.datformers.resources.HttpClient;
 import com.datformers.storage.DBWrapper;
 
 /*
@@ -345,11 +345,11 @@ public class WorkerServlet extends HttpServlet {
 		String urlString = "http://" +masterIPPort + "/master/workerstatus";
 		HttpClient client = new HttpClient();
 
-		client.makeRequest(urlString, Integer.parseInt(masterIPPort.split(":")[1].trim()), requestParameters);
-		if(client.getResponseCode()==200)
+		client.makeGetRequest(urlString, Integer.parseInt(masterIPPort.split(":")[1].trim()), requestParameters);
+		if(client.getResponseStatusCode()==200)
 			System.out.println("WorkerServlet:updateStatusWaiting: Successful updation of master at: "+urlString);
 		else 
-			System.out.println("WorkerServlet:updateStatusWaiting: Unsuccessful updation of master at: "+urlString+" returned: "+client.getResponseCode());
+			System.out.println("WorkerServlet:updateStatusWaiting: Unsuccessful updation of master at: "+urlString+" returned: "+client.getResponseStatusCode());
 
 	}
 

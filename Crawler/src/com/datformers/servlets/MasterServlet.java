@@ -67,9 +67,11 @@ public class MasterServlet extends HttpServlet{
 					callForCheckpoint();
 				if(checkForCompletion())
 					stopCrawling();
+				if(checkForCheckpoitingCompletion())
+					makeCrawlRequests(false);
 			} else if(request.getPathInfo()!=null&&request.getPathInfo().contains("startCrawling")) {
 				//Make crawl requests to all crawlers
-				makeCrawlRequests();
+				makeCrawlRequests(true);
 			} else if(request.getPathInfo()!=null&&request.getPathInfo().contains("stopCrawling")) {
 				//Stop all crawling();
 				stopCrawling();
@@ -83,6 +85,22 @@ public class MasterServlet extends HttpServlet{
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw e;
+		}
+	}
+
+	private boolean checkForCheckpoitingCompletion() {
+		if(crawl_status.endsWith("crawling")) {
+			int count = 0;
+			for(String key: crawlerStatusMap.keySet()) {
+				if(crawlerStatusMap.get(key).getStatus().equals("idle"))
+					count++;
+			}
+			if(count==crawlerStatusMap.keySet().size())
+				return true;
+			else 
+				return false;
+		} else {
+			return false;
 		}
 	}
 
@@ -133,30 +151,32 @@ public class MasterServlet extends HttpServlet{
 		crawl_status = "idle";
 	}
 
-	private void makeCrawlRequests() {
+	private void makeCrawlRequests(boolean readFromFile) {
 		//Read seed URLs
 		FileReader fileReader;
 		try {
-			fileReader = new FileReader(new File(seedFileName));
-			BufferedReader br = new BufferedReader(fileReader);
-			List<String> seedUrls = new ArrayList<String>();
-			String line = null;
-			while((line = br.readLine())!=null) {
-				seedUrls.add(line);
-			}
-
-			//Divide URLS among crawlers
-			//TODO: implement URL hashing
-			int urlsPerCrawlerCount = seedUrls.size()/crawlerStatusMap.keySet().size();
 			Map<String, String[]> crawlerToUrlMap = new HashMap<String, String[]>();
-			int ind = 0;
-			for(String key: crawlerStatusMap.keySet()) {
-				String urls[] = new String[urlsPerCrawlerCount];
-				for(int i = 0; i<urlsPerCrawlerCount; i++) {
-					urls[i] = seedUrls.get(ind++);
+			if(readFromFile) {
+				fileReader = new FileReader(new File(seedFileName));
+				BufferedReader br = new BufferedReader(fileReader);
+				List<String> seedUrls = new ArrayList<String>();
+				String line = null;
+				while((line = br.readLine())!=null) {
+					seedUrls.add(line);
 				}
-				crawlerToUrlMap.put(key, urls);
-			}
+
+				//Divide URLS among crawlers
+				//TODO: implement URL hashing
+				int urlsPerCrawlerCount = seedUrls.size()/crawlerStatusMap.keySet().size();
+				int ind = 0;
+				for(String key: crawlerStatusMap.keySet()) {
+					String urls[] = new String[urlsPerCrawlerCount];
+					for(int i = 0; i<urlsPerCrawlerCount; i++) {
+						urls[i] = seedUrls.get(ind++);
+					}
+					crawlerToUrlMap.put(key, urls);
+				}
+			} 
 
 			//Form Json object for the request
 			JSONArray crawlerList = new JSONArray(crawlerStatusMap.keySet().toArray(new String[crawlerStatusMap.keySet().size()]));			
@@ -165,8 +185,8 @@ public class MasterServlet extends HttpServlet{
 			for(String key: crawlerStatusMap.keySet()) {
 				HttpClient client = new HttpClient();
 				JSONObject requestObject = new JSONObject();
-
-				requestObject.put("urls", new JSONArray(crawlerToUrlMap.get(key)));
+				if(readFromFile)
+					requestObject.put("urls", new JSONArray(crawlerToUrlMap.get(key)));
 				requestObject.put("maxRequests", maxRequestsPerCrawler);
 				
 				//And here were are making life more complicated

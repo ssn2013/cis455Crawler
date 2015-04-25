@@ -7,7 +7,9 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
+
 import com.datformers.resources.HttpClient;
+import com.datformers.crawler.XPathCrawler;
 import com.datformers.servlets.WorkerServlet;
 import com.datformers.storage.DBWrapper;
 
@@ -41,6 +43,7 @@ public class WorkerStatusUpdator implements Runnable {
 				requestParameters.put("job", parent.getPresentJobName());
 				requestParameters.put("keysRead", "" + parent.getKeysRead());
 				requestParameters.put("keysWritten", "" + parent.getKeysWritten());
+				requestParameters.put("totalURLCount", "" + XPathCrawler.totalURLCount);
 				String urlString = "http://" + masterIP + ":" + masterPort
 						+ "/master/workerstatus";
 				System.out.println("WORKER: KILL ME: STATUS: "+parent.STATUS);

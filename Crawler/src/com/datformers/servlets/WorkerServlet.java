@@ -6,8 +6,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.print.attribute.standard.MediaSize.Other;
 import javax.servlet.*;
 import javax.servlet.http.*;
+import javax.xml.xpath.XPath;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -15,6 +17,7 @@ import org.json.JSONObject;
 
 import com.datformers.crawler.XPathCrawler;
 import com.datformers.crawler.resources.OutgoingMap;
+import com.datformers.crawler.resources.URLQueue;
 import com.datformers.mapreduce.util.JobDetails;
 import com.datformers.mapreduce.worker.resources.FileManagement;
 import com.datformers.mapreduce.worker.resources.PushDataThread;
@@ -34,14 +37,14 @@ public class WorkerServlet extends HttpServlet {
 	public FileManagement fileManagementObject = null; //Object of FileManagement class which handles all file related operations
 	private String masterIPPort;
 	private int port;
-	private String storageDir;
+	static String storageDir;
 	private String dbDir;
 	private int countOfCompletedThreads = 0;
 	public static String STATUS = "idle";
 	private WorkerStatusUpdator wk;
 	private Thread wkt;
 	public static String seedUrl[];
-	private String otherWorkers[];
+	public String otherWorkers[];
 
 	//Job handling
 	public JobDetails currentJob = null;
@@ -51,6 +54,7 @@ public class WorkerServlet extends HttpServlet {
 //		super.init(servletConfig);
 		masterIPPort = servletConfig.getInitParameter("master"); //fetch details of master
 		storageDir = servletConfig.getInitParameter("storagedir"); //fetch details of storage directory
+		if(storageDir.endsWith("/")) storageDir=storageDir.substring(0,storageDir.length()-1);   //the store dir WLL not have / at end!! 
 		dbDir = servletConfig.getInitParameter("databasedir"); //fetch details of database directory
 		DBWrapper.initialize(dbDir); //initialize DB environment
 //		DBWrapper.close();
@@ -97,7 +101,7 @@ public class WorkerServlet extends HttpServlet {
 			STATUS = "idle";
 		} else if (request.getPathInfo().contains("checkpoint")) {
 			STATUS = "checkpointing";
-			processCreateCheckpoint(request, response); //redirect to method handling crawl stopl
+			processCreateCheckpoint(request, response); //redirect to method checkpointing
 		} else {
 			response.setContentType("text/html");
 			PrintWriter out = response.getWriter();
@@ -161,35 +165,21 @@ public class WorkerServlet extends HttpServlet {
 			response.setStatus(500);
 			return;
 		}
-		OutgoingMap map = OutgoingMap.getInstance();
 		
-		//Dummy
-		try {
-			//TODO: Create a separate thread to parallely run checkpoint
+		
+			//Create a separate thread to parallely run checkpoint
 			System.out.println("WORKER: Checkpointing Part");
-			Thread.sleep(3000);
+			CheckPointThread ct=new CheckPointThread(this);
+			new Thread(ct).start();
 			
-			System.out.println("WORKER: Checkpointing Part");
-			Thread.sleep(3000);
 			
-			System.out.println("WORKER: Checkpointing Part");
-			Thread.sleep(3000);
-		} catch (InterruptedException e) {
-			System.out.println("DYING AFTER CHECKPOINTING");
-			e.printStackTrace();
-		}
-		
-		//TODO: Write outgoing map
-		//TODO: Send data to remaining crawlers
-		
-		//Update master
-		System.out.println("HI!: ");
-		STATUS = "idle";
-		System.out.println("STATUS cheanged;"+STATUS);
+		response.setStatus(200);
 	}
 	private void processRunCrawl(HttpServletRequest request,
 			HttpServletResponse response) {
 		try {
+			//save the WorkerServlet object in XPathCrawler
+			XPathCrawler.setWorkerServletOb(this);
 			StringBuilder buffer = new StringBuilder();
 			BufferedReader reader = request.getReader();
 			String line;
@@ -252,12 +242,12 @@ public class WorkerServlet extends HttpServlet {
 			
 			//start threads
 			threadPool = new ArrayList<Thread>();
-			for(int i=0; i<numThreads; i++) {
-				WorkerThread wt  = new WorkerThread(job, fileManagementObject, this, false);
-				Thread t = new Thread(wt);
-				threadPool.add(t);
-				t.start();
-			}
+//			for(int i=0; i<numThreads; i++) {
+//				WorkerThread wt  = new WorkerThread(job, fileManagementObject, this, false);
+//				Thread t = new Thread(wt);
+//				threadPool.add(t);
+//				t.start();
+//			}
 		}
 	}
 
@@ -302,12 +292,12 @@ public class WorkerServlet extends HttpServlet {
 		//Instantiate a threadpool and run thread
 		threadPool = new ArrayList<Thread>();
 		currentJob.resetKeys();
-		for(int i=0; i<currentJob.getNumThreads(); i++) {
-			WorkerThread worker = new WorkerThread(currentJob.getJob(),fileManagementObject,this, true);
-			Thread t = new Thread(worker);
-			threadPool.add(t);
-			t.start();
-		}
+//		for(int i=0; i<currentJob.getNumThreads(); i++) {
+//			WorkerThread worker = new WorkerThread(currentJob.getJob(),fileManagementObject,this, true);
+//			Thread t = new Thread(worker);
+//			threadPool.add(t);
+//			t.start();
+//		}
 	}
 
 	/*
@@ -317,24 +307,25 @@ public class WorkerServlet extends HttpServlet {
 		countOfCompletedThreads++;
 		if(countOfCompletedThreads == currentJob.getNumThreads()) { //check count of threads against required number of threads to see if all threads finished
 			System.out.println("System completed");
-			if(STATUS.equals("mapping")) { //on completions of map
-				currentJob.isMapPhase = false;
-				fileManagementObject.closeAllSpoolOut(); //close all references to spool out directory files
-				new Thread(new PushDataThread(currentJob.getWorkerDetails(), this, fileManagementObject)).start(); //run push data on another thread
-			} else if (STATUS.equals("reducing")) { //on completion of reduce
-				STATUS = "idle"; //change status
-				pastJob = currentJob; //past job keeps track of previous job (for keysWritten)
-				fileManagementObject.closeReduceWriter();
-				currentJob = null;
-			}
+//			if(STATUS.equals("mapping")) { //on completions of map
+//				currentJob.isMapPhase = false;
+//				fileManagementObject.closeAllSpoolOut(); //close all references to spool out directory files
+//				new Thread(new PushDataThread(currentJob.getWorkerDetails(), this, fileManagementObject)).start(); //run push data on another thread
+//			} else if (STATUS.equals("reducing")) { //on completion of reduce
+//				STATUS = "idle"; //change status
+//				pastJob = currentJob; //past job keeps track of previous job (for keysWritten)
+//				fileManagementObject.closeReduceWriter();
+//				currentJob = null;
+//			}
+			STATUS="idle";
+			updateStatusToMaster();
 		}
 	}
 	
 	/*
 	 * Method called by thread handling push data to update status of worker as waiting 
 	 */
-	public void updateStatusWaiting() {
-		STATUS = "waiting";
+	public void updateStatusToMaster() {
 
 		Map<String, String> requestParameters = new HashMap<String, String>();
 		requestParameters.put("port", ""+port);
@@ -342,6 +333,7 @@ public class WorkerServlet extends HttpServlet {
 		requestParameters.put("job", getPresentJobName());
 		requestParameters.put("keysRead", "" + getKeysRead());
 		requestParameters.put("keysWritten", "" + getKeysWritten());
+		requestParameters.put("totalURLCount", "" + XPathCrawler.totalURLCount);
 		String urlString = "http://" +masterIPPort + "/master/workerstatus";
 		HttpClient client = new HttpClient();
 
@@ -433,6 +425,80 @@ class CrawlerStartHelper implements Runnable {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	
+	
+}
+
+class CheckPointThread implements Runnable {
+	private WorkerServlet ws;
+	
+	CheckPointThread(WorkerServlet w) {
+	ws=w;
+	
+	}
+	/*
+	 * 
+	 * This function is used to delete the directory
+	 */
+	public boolean deleteDir(File dir) {
+		if (dir.isDirectory()) {
+			String[] children = dir.list();
+			for (int i = 0; i < children.length; i++) {
+				boolean success = deleteDir(new File(dir, children[i]));
+				if (!success) {
+					return false;
+				}
+			}
+		}
+		// The directory is now empty or this is a file so delete it
+		return dir.delete();
+	}
+
+	/*
+	 * 
+	 * This function is used to create the directory
+	 */
+	public void createDir(String dir) {
+
+		File f = new File(dir);
+		if (f.exists()) {
+			deleteDir(f);
+		}
+		if (!f.mkdir()) {
+			System.out.println(dir);
+			System.out.println("Error in creating Dir!!");
+			return;
+		}
+
+	}
+
+	@Override
+	public void run() {
+//		String spoolIn = ws.storageDir + "/spool_in";
+//		createDir(spoolIn);
+		ws.fileManagementObject = new FileManagement(ws.storageDir, null, 0);
+		OutgoingMap map=OutgoingMap.getInstance();
+		URLQueue queue = URLQueue.getInstance();
+		ws.threadPool = new ArrayList<Thread>();
+		for(int i=0;i<ws.otherWorkers.length;i++) {
+			if(i==0) {
+				if(queue.isEmpty()) continue;
+				WorkerThread worker = new WorkerThread(queue.getQueue(),ws.fileManagementObject,ws,ws.storageDir+"/"+ws.otherWorkers[i]);
+				Thread t = new Thread(worker);
+				ws.threadPool.add(t);
+				t.start();
+			}
+			else {
+				if(map.getQueueAtIndex(i).isEmpty()) continue;
+				WorkerThread worker = new WorkerThread(map.getQueueAtIndex(i),ws.fileManagementObject,ws,ws.storageDir+"/"+ws.otherWorkers[i]);
+				Thread t = new Thread(worker);
+				ws.threadPool.add(t);
+				t.start();
+			}
+			
+		}
+		
 	}
 	
 	

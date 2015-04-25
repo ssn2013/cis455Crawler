@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 
 import com.datformers.crawler.XPathCrawler;
@@ -59,6 +60,10 @@ public class OutgoingMap {
 	}
 	public static OutgoingMap getInstance() { 
 		return queue;
+	}
+	public ArrayList<String> getQueueAtIndex(int index) { 
+		
+		return new ArrayList<String>(queue.outgoingCrawlQueue.get(index));
 	}
 	/*
 	 * Method to enqueue URL

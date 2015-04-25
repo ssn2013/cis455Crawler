@@ -4,10 +4,10 @@
 <display-name>HW3 (Master)</display-name> 
 	<servlet>
 		<servlet-name>MasterServlet</servlet-name>
-		<servlet-class>com.datformers.master.servlets.MasterServlet</servlet-class>
+		<servlet-class>com.datformers.servlets.MasterServlet</servlet-class>
 		<init-param>
 			<param-name>SeedURlFile</param-name>
-			<param-value>/home/cis455/seedUrls</param-value>
+			<param-value>/home/sruthi/seedUrls</param-value>
 		</init-param>
 		<init-param>
 			<param-name>MaxRequests</param-name>
@@ -16,6 +16,6 @@
 	</servlet>
 	<servlet-mapping>
 		<servlet-name>MasterServlet</servlet-name>
-		<url-pattern>/master/*</url-pattern>
+		<url-pattern>/*</url-pattern>
 	</servlet-mapping>
 </web-app>

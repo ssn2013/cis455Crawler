@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.datformers.mapreduce.util.HttpClient;
-import com.datformers.mapreduce.worker.WorkerServlet;
+import com.datformers.servlets.WorkerServlet;
 import com.datformers.storage.DBWrapper;
 
 /*

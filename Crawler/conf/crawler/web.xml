@@ -4,14 +4,14 @@
 <display-name>HW3 (Worker)</display-name>
 	<servlet>
 	<servlet-name>WorkerServlet</servlet-name>
-	<servlet-class>com.datformers.mapreduce.worker.WorkerServlet</servlet-class>
+	<servlet-class>com.datformers.servlets.WorkerServlet</servlet-class>
          <init-param>
            <param-name>storagedir</param-name>
-           <param-value>/home/dpk/Documents/IWS/store</param-value>
+           <param-value>/home/sruthi/Desktop/tempstorage/store</param-value>
          </init-param>
          <init-param>
            <param-name>databasedir</param-name>
-           <param-value>/home/dpk/Documents/IWS/database</param-value>
+           <param-value>/home/sruthi/Desktop/tempstorage/database</param-value>
          </init-param>
          <init-param>
            <param-name>master</param-name>

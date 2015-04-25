@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.datformers.mapreduce.util.HttpClient;
-import com.datformers.mapreduce.worker.WorkerServlet;
+import com.datformers.servlets.WorkerServlet;
 
 /*
  * Class represeting the thread handling pushdata calls

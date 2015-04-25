@@ -4,8 +4,8 @@ import java.io.IOException;
 
 import com.datformers.mapreduce.Context;
 import com.datformers.mapreduce.Job;
-import com.datformers.mapreduce.worker.WorkerServlet;
 import com.datformers.mapreduce.worker.resources.FileManagement;
+import com.datformers.servlets.WorkerServlet;
 
 /*
  * Class representing threads used for map and reduce. Class is also the Context used by Jobs

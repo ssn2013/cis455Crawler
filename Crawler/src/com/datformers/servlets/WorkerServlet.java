@@ -1,4 +1,4 @@
-	package com.datformers.mapreduce.worker;
+package com.datformers.servlets;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -50,6 +50,7 @@ public class WorkerServlet extends HttpServlet {
 		masterIPPort = servletConfig.getInitParameter("master"); //fetch details of master
 		storageDir = servletConfig.getInitParameter("storagedir"); //fetch details of storage directory
 		dbDir = servletConfig.getInitParameter("databasedir"); //fetch details of database directory
+		System.out.println("AAAAAAAAAAAAAAAAAAAAAAAAAAA");
 		DBWrapper.initialize(dbDir); //initialize DB environment
 //		DBWrapper.close();
 		port = Integer.parseInt(servletConfig.getInitParameter("port")); //fetch port details

@@ -14,6 +14,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.datformers.crawler.XPathCrawler;
+import com.datformers.crawler.resources.OutgoingMap;
 import com.datformers.mapreduce.util.HttpClient;
 import com.datformers.mapreduce.util.JobDetails;
 import com.datformers.mapreduce.worker.resources.FileManagement;
@@ -36,10 +37,11 @@ public class WorkerServlet extends HttpServlet {
 	private String storageDir;
 	private String dbDir;
 	private int countOfCompletedThreads = 0;
-	private String status = "idle";
+	public static String STATUS = "idle";
 	private WorkerStatusUpdator wk;
 	private Thread wkt;
 	public static String seedUrl[];
+	private String otherWorkers[];
 
 	//Job handling
 	public JobDetails currentJob = null;
@@ -50,7 +52,6 @@ public class WorkerServlet extends HttpServlet {
 		masterIPPort = servletConfig.getInitParameter("master"); //fetch details of master
 		storageDir = servletConfig.getInitParameter("storagedir"); //fetch details of storage directory
 		dbDir = servletConfig.getInitParameter("databasedir"); //fetch details of database directory
-		System.out.println("AAAAAAAAAAAAAAAAAAAAAAAAAAA");
 		DBWrapper.initialize(dbDir); //initialize DB environment
 //		DBWrapper.close();
 		port = Integer.parseInt(servletConfig.getInitParameter("port")); //fetch port details
@@ -93,7 +94,10 @@ public class WorkerServlet extends HttpServlet {
 	{
 		if(request.getPathInfo().contains("stopcrawl")) {
 			processStopCrawl(request, response); //redirect to method handling crawl stop
-			status = "idle";
+			STATUS = "idle";
+		} else if (request.getPathInfo().contains("checkpoint")) {
+			STATUS = "checkpointing";
+			processCreateCheckpoint(request, response); //redirect to method handling crawl stopl
 		} else {
 			response.setContentType("text/html");
 			PrintWriter out = response.getWriter();
@@ -111,17 +115,14 @@ public class WorkerServlet extends HttpServlet {
 	public void doPost(HttpServletRequest request, HttpServletResponse response) {
 		System.out.println("WorkerServlet:doPost GOT: "+request.getPathInfo());
 		if(request.getPathInfo().contains("runmap")) {
-			status = "mapping";
+			STATUS = "mapping";
 			processRunMap(request, response); //redirect to method handing map calls
 		} else if(request.getPathInfo().contains("runreduce")) {
-			status = "reducing";
+			STATUS = "reducing";
 			processRunReduce(request, response); //redirect to method handling reduce calls
 		} else if(request.getPathInfo().contains("startcrawl")) {
-			status = "crawling";
+			STATUS = "crawling";
 			processRunCrawl(request, response); //redirect to method handling for crawl start	
-		}  else if(request.getPathInfo().contains("checkpoint")) {
-			processCreateCheckpoint(request, response); //redirect to method handling crawl stop
-			status = "CheckPointing";
 		} else if(request.getPathInfo().contains("pushdata")) {
 			processPushData(request, response); //redirect to method handling pushdata calls
 		}
@@ -147,14 +148,44 @@ public class WorkerServlet extends HttpServlet {
 	private void processStopCrawl(HttpServletRequest request,
 			HttpServletResponse response) {
 		System.out.println("STOPPING DIE");
+		STATUS = "idle";
 		XPathCrawler.STOP_CRAWLER=true;
 		
 	}
 
 	private void processCreateCheckpoint(HttpServletRequest request,
 			HttpServletResponse response) {
-		XPathCrawler.STOP_CRAWLER=true;
+		//XPathCrawler.STOP_CRAWLER=true;
+		if(OutgoingMap.getInstance()==null) {
+			System.out.println("Outgoing Map not existent");
+			response.setStatus(500);
+			return;
+		}
+		OutgoingMap map = OutgoingMap.getInstance();
 		
+		//Dummy
+		try {
+			//TODO: Create a separate thread to parallely run checkpoint
+			System.out.println("WORKER: Checkpointing Part");
+			Thread.sleep(3000);
+			
+			System.out.println("WORKER: Checkpointing Part");
+			Thread.sleep(3000);
+			
+			System.out.println("WORKER: Checkpointing Part");
+			Thread.sleep(3000);
+		} catch (InterruptedException e) {
+			System.out.println("DYING AFTER CHECKPOINTING");
+			e.printStackTrace();
+		}
+		
+		//TODO: Write outgoing map
+		//TODO: Send data to remaining crawlers
+		
+		//Update master
+		System.out.println("HI!: ");
+		STATUS = "idle";
+		System.out.println("STATUS cheanged;"+STATUS);
 	}
 	private void processRunCrawl(HttpServletRequest request,
 			HttpServletResponse response) {
@@ -183,17 +214,17 @@ public class WorkerServlet extends HttpServlet {
 				}
 				//removing last occurrence of delim
 			}
-			String workers[]=new String [crawlWorkers.length()];
+			otherWorkers = new String [crawlWorkers.length()];
 			args[0]=storageDir;
 			args[1]=""+5;
 			args[2]=maxRequests;
 			for (int i = 0; i < crawlWorkers.length(); i++) {
 				// workers[i] = crawlWorkers.getJSONObject(i).getString("host");
-				workers[i]=crawlWorkers.getString(i).toString();
+				otherWorkers[i]=crawlWorkers.getString(i).toString();
 			}
 			
 			
-			CrawlerStartHelper myrunnable = new CrawlerStartHelper(args,seedUrl,workers);
+			CrawlerStartHelper myrunnable = new CrawlerStartHelper(args,seedUrl,otherWorkers);
 	     	new Thread(myrunnable).start();
 			
 		} catch (Exception e) {
@@ -286,12 +317,12 @@ public class WorkerServlet extends HttpServlet {
 		countOfCompletedThreads++;
 		if(countOfCompletedThreads == currentJob.getNumThreads()) { //check count of threads against required number of threads to see if all threads finished
 			System.out.println("System completed");
-			if(status.equals("mapping")) { //on completions of map
+			if(STATUS.equals("mapping")) { //on completions of map
 				currentJob.isMapPhase = false;
 				fileManagementObject.closeAllSpoolOut(); //close all references to spool out directory files
 				new Thread(new PushDataThread(currentJob.getWorkerDetails(), this, fileManagementObject)).start(); //run push data on another thread
-			} else if (status.equals("reducing")) { //on completion of reduce
-				status = "idle"; //change status
+			} else if (STATUS.equals("reducing")) { //on completion of reduce
+				STATUS = "idle"; //change status
 				pastJob = currentJob; //past job keeps track of previous job (for keysWritten)
 				fileManagementObject.closeReduceWriter();
 				currentJob = null;
@@ -303,7 +334,7 @@ public class WorkerServlet extends HttpServlet {
 	 * Method called by thread handling push data to update status of worker as waiting 
 	 */
 	public void updateStatusWaiting() {
-		status = "waiting";
+		STATUS = "waiting";
 
 		Map<String, String> requestParameters = new HashMap<String, String>();
 		requestParameters.put("port", ""+port);
@@ -340,11 +371,11 @@ public class WorkerServlet extends HttpServlet {
 	 * Method returns count of keys read according to specifics of status
 	 */
 	public int getKeysRead() {
-		if(status.equals("mapping")||status.equals("reducing"))
+		if(STATUS.equals("mapping")||STATUS.equals("reducing"))
 			return currentJob.getKeysRead();
-		if(status.equals("waiting"))
+		if(STATUS.equals("waiting"))
 			return currentJob.getKeysRead();
-		if(status.endsWith("idle"))
+		if(STATUS.endsWith("idle"))
 			return 0;
 		return -1;
 	}
@@ -353,11 +384,11 @@ public class WorkerServlet extends HttpServlet {
 	 * Method calls count of keys written according to specifics of status
 	 */
 	public int getKeysWritten() {
-		if(status.equals("mapping")||status.equals("reducing"))
+		if(STATUS.equals("mapping")||STATUS.equals("reducing"))
 			return currentJob.getKeysWritten();
-		if(status.equals("waiting"))
+		if(STATUS.equals("waiting"))
 			return currentJob.getKeysWritten();
-		if(status.endsWith("idle")) {
+		if(STATUS.endsWith("idle")) {
 			if(pastJob!=null)
 				return pastJob.getKeysWritten();
 			else 
@@ -380,7 +411,7 @@ public class WorkerServlet extends HttpServlet {
 	 * Method returns current status of servlet
 	 */
 	public String getState() {
-		return status;
+		return STATUS;
 	}
 }
 

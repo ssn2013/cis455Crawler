@@ -27,6 +27,7 @@ public class MasterServlet extends HttpServlet{
 	private Map<String, CrawlerStatus> crawlerStatusMap = new HashMap<String, CrawlerStatus>();
 	private String seedFileName;
 	private int maxRequests;
+	private String crawl_status ="idle";
 	public void init(ServletConfig servletConfig) throws javax.servlet.ServletException {
 		super.init(servletConfig);
 		seedFileName = getServletConfig().getInitParameter("SeedURlFile");
@@ -87,6 +88,7 @@ public class MasterServlet extends HttpServlet{
 					+"\nPORT: "+ crawlerStatusMap.get(key).getPort());
 			client.makeRequest("http://"+key+"/crawler/checkpoint", crawlerStatusMap.get(key).getPort(), new HashMap<String, String>());
 		}
+		crawl_status = "checkpoint";
 	}
 
 	private boolean checkForCheckpoiting() {
@@ -95,6 +97,7 @@ public class MasterServlet extends HttpServlet{
 			if(crawlerStatusMap.get(key).getStatus().equals("done")) 
 				countOfDoneWorkers++;
 		}
+		System.out.println("CHECK FOR CHECKPOINTING: COUNT "+countOfDoneWorkers+" VALUE: "+(crawlerStatusMap.keySet().size()==countOfDoneWorkers));
 		if(countOfDoneWorkers == crawlerStatusMap.keySet().size())
 			return true;
 		else 
@@ -110,6 +113,7 @@ public class MasterServlet extends HttpServlet{
 					+"\nPORT: "+ crawlerStatusMap.get(key).getPort());
 			client.makeRequest("http://"+key+"/crawler/stopcrawl", crawlerStatusMap.get(key).getPort(), new HashMap<String, String>());
 		}
+		crawl_status = "idle";
 	}
 
 	private void makeCrawlRequests() {
@@ -166,6 +170,7 @@ public class MasterServlet extends HttpServlet{
 
 				client.makePostRequest("http://"+key+"/crawler/startcrawl", crawlerStatusMap.get(key).getPort(), "application/json", requestObject.toString());
 			}
+			crawl_status = "crawling";
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {

@@ -37,13 +37,13 @@ public class WorkerStatusUpdator implements Runnable {
 				// Code to send workerStatus updates
 				Map<String, String> requestParameters = new HashMap<String, String>();
 				requestParameters.put("port", "" + this.workerPort);
-				requestParameters.put("status", parent.getState());
+				requestParameters.put("status", parent.STATUS);
 				requestParameters.put("job", parent.getPresentJobName());
 				requestParameters.put("keysRead", "" + parent.getKeysRead());
 				requestParameters.put("keysWritten", "" + parent.getKeysWritten());
 				String urlString = "http://" + masterIP + ":" + masterPort
 						+ "/master/workerstatus";
-
+				System.out.println("WORKER: KILL ME: STATUS: "+parent.STATUS);
 				client.makeRequest(urlString, Integer.parseInt(masterPort.trim()), requestParameters);
 //				if(client.getResponseCode()==200)
 //					System.out.println("WorkerStatusUpdator:run: Successful updation of master at: "+urlString);

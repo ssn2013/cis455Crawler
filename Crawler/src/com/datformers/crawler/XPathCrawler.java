@@ -11,6 +11,7 @@ import com.datformers.crawler.info.RobotsTxtInfo;
 import com.datformers.crawler.resources.DomainRules;
 import com.datformers.crawler.resources.URLQueue;
 import com.datformers.crawler.resources.OutgoingMap;
+import com.datformers.servlets.WorkerServlet;
 import com.datformers.storage.DBWrapper;
 
 /*
@@ -195,6 +196,7 @@ public class XPathCrawler {
 					}
 			}
 		}
+		WorkerServlet.STATUS = "done";
 		return killTime;
 	}
 	//	public void closing() {

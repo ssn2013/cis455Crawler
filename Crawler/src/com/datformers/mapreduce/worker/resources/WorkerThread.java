@@ -8,9 +8,7 @@ import java.io.PrintWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Queue;
 
-import com.datformers.mapreduce.Context;
 import com.datformers.mapreduce.Job;
 import com.datformers.mapreduce.worker.resources.FileManagement;
 import com.datformers.resources.HttpClient;

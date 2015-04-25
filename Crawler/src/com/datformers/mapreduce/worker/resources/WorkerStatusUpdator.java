@@ -1,9 +1,5 @@
 package com.datformers.mapreduce.worker.resources;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,7 +7,6 @@ import java.util.Map;
 import com.datformers.resources.HttpClient;
 import com.datformers.crawler.XPathCrawler;
 import com.datformers.servlets.WorkerServlet;
-import com.datformers.storage.DBWrapper;
 
 /*
  * Class representing thread which updates Master every 10 seconds with status of worker

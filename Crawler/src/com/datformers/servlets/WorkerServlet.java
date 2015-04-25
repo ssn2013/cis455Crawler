@@ -6,13 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.print.attribute.standard.MediaSize.Other;
 import javax.servlet.*;
 import javax.servlet.http.*;
-import javax.xml.xpath.XPath;
-
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.datformers.crawler.XPathCrawler;

@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import com.datformers.crawler.XPathCrawler;
-
 /*
  * Class implementing the Queue of URLs
  */

@@ -9,14 +9,11 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.*;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.net.ssl.HttpsURLConnection;
-
-import org.w3c.dom.Document;
 
 /*
  * Class handles all HTTP calls: requests and responses

@@ -12,8 +12,8 @@ import java.util.Queue;
 
 import com.datformers.mapreduce.Context;
 import com.datformers.mapreduce.Job;
-import com.datformers.mapreduce.util.HttpClient;
 import com.datformers.mapreduce.worker.resources.FileManagement;
+import com.datformers.resources.HttpClient;
 import com.datformers.servlets.WorkerServlet;
 
 /*

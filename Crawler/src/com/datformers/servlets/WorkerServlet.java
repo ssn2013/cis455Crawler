@@ -20,7 +20,6 @@ import com.datformers.crawler.resources.OutgoingMap;
 import com.datformers.crawler.resources.URLQueue;
 import com.datformers.mapreduce.util.JobDetails;
 import com.datformers.mapreduce.worker.resources.FileManagement;
-import com.datformers.mapreduce.worker.resources.PushDataThread;
 import com.datformers.mapreduce.worker.resources.WorkerStatusUpdator;
 import com.datformers.mapreduce.worker.resources.WorkerThread;
 import com.datformers.resources.HttpClient;

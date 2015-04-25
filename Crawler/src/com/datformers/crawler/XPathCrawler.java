@@ -25,12 +25,14 @@ public class XPathCrawler {
 	public static int MAX_SIZE = -1;
 	private static int MAX_PAGES = -1;
 	private static int NO_OF_THREADS = 5;
-	public HashMap<String, DomainRules> domainToRulesMapping = new HashMap<String, DomainRules>();
+	public HashMap<String, DomainRules> domainToRulesMapping=null;
 	public static List<Thread> subThreads = new ArrayList<Thread>();
 	private static XPathCrawler crawler = null;
 	public static int count = 0;
+	public static int totalURLCount = 0;
 	public static int selfIndex=-1;
 	public static boolean SYSTEM_SHUTDOWN = false;
+	public static WorkerServlet ws= null;
 	public static boolean STOP_CRAWLER = false;
 	public static XPathCrawler getInstance() {
 		return crawler;
@@ -43,6 +45,9 @@ public class XPathCrawler {
 		if(host.contains("/"))
 			host = host.substring(0, host.indexOf('/'));//remove any additional paths 
 		return host;
+	}
+	public static void setWorkerServletOb(WorkerServlet w){
+		ws=w;
 	}
 	/*
 	 * Function to get domain specific rules for a given URL
@@ -61,7 +66,7 @@ public class XPathCrawler {
 	 */
 	public boolean getUrlFromFile() {
 		URLQueue queue = URLQueue.getInstance();
-		String spoolIn = STORE_DIRECTORY + "/spool_in";
+		String spoolIn = STORE_DIRECTORY + "/spoolIn";
 		spoolIn = spoolIn.replace("//", "/");
 		//get urls from spool in?
 		File f = new File(spoolIn);
@@ -85,6 +90,7 @@ public class XPathCrawler {
 	}
 
 	public void executeTask() {
+		domainToRulesMapping = new HashMap<String, DomainRules>();
 		String delim=";;|;;";
 		URLQueue queue = URLQueue.getInstance(); //instance of the queue of URLs
 		String keys[]=CRAWLERS;
@@ -96,8 +102,7 @@ public class XPathCrawler {
 			for(String url:STARTING_URLS) {
 				queue.add(url); //this crawler class just enqueues the first URL and the threads handle the rest
 			}
-		}
-		else getUrlFromFile();
+		} else getUrlFromFile();
 	}
 	
 	public static void start(String args[],String urls[],String workers[]) {
@@ -105,6 +110,7 @@ public class XPathCrawler {
 			SYSTEM_SHUTDOWN=false;
 			count=0;
 			STOP_CRAWLER = false;
+			
 			if(args.length<3) {
 				System.out.println("3 Arguments: 1. Starting URL, 2. DB directory, 3. Maximum size required 4.Num Pages 5.Crawlers");
 				return;
@@ -140,6 +146,8 @@ public class XPathCrawler {
 				DBWrapper.commit();
 //				System.out.println("Database Committed");
 //			}
+				WorkerServlet.STATUS = "done";
+				ws.updateStatusToMaster();
 		} catch (Exception e) {
 			DBWrapper.close();
 			throw e;
@@ -196,7 +204,7 @@ public class XPathCrawler {
 					}
 			}
 		}
-		WorkerServlet.STATUS = "done";
+		
 		return killTime;
 	}
 	//	public void closing() {
@@ -212,6 +220,7 @@ public class XPathCrawler {
 	}
 
 	public static synchronized void addCounter() {
+		totalURLCount++;
 		count++; //counter incremented by threads to keep track of files processed
 	}
 }

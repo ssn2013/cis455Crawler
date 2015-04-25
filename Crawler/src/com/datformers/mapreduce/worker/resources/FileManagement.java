@@ -74,8 +74,9 @@ public class FileManagement {
 		}
 		
 		//open input directory
+		if(inputDir==null) {
 		inputDirFile = new File(this.inputDir);
-		
+		}
 		//setting up spool in 
 		spoolInDir = new File(spoolInDirName);
 		if(spoolInCounter==-1 && spoolInDir.exists()) {

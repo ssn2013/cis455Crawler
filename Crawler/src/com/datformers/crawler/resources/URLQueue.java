@@ -1,5 +1,6 @@
 package com.datformers.crawler.resources;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -36,6 +37,9 @@ public class URLQueue {
 			wait();
 		}
 		return urlQueue.remove();
+	}
+	public ArrayList<String> getQueue() {
+		return new ArrayList<String>(queue.urlQueue);
 	}
 	/*
 	 * Method to determine if the queue is empty

@@ -26,12 +26,14 @@ import com.datformers.resources.HttpClient;
 public class MasterServlet extends HttpServlet{
 	private Map<String, CrawlerStatus> crawlerStatusMap = new HashMap<String, CrawlerStatus>();
 	private String seedFileName;
+	private int maxRequestsPerCrawler;
 	private int maxRequests;
 	private String crawl_status ="idle";
 	public void init(ServletConfig servletConfig) throws javax.servlet.ServletException {
 		super.init(servletConfig);
 		seedFileName = getServletConfig().getInitParameter("SeedURlFile");
-		maxRequests = Integer.parseInt(getServletConfig().getInitParameter("MaxRequests"));
+		maxRequestsPerCrawler = Integer.parseInt(getServletConfig().getInitParameter("MaxRequestsPerCrawler"));
+		maxRequests = Integer.parseInt(getServletConfig().getInitParameter("TotalMaxRequests"));
 	}
 
 	public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException  {
@@ -61,6 +63,8 @@ public class MasterServlet extends HttpServlet{
 				//Check if time for checkpointing
 				if(checkForCheckpoiting())
 					callForCheckpoint();
+				if(checkForCompletion())
+					stopCrawling();
 			} else if(request.getPathInfo()!=null&&request.getPathInfo().contains("startCrawling")) {
 				//Make crawl requests to all crawlers
 				makeCrawlRequests();
@@ -78,6 +82,17 @@ public class MasterServlet extends HttpServlet{
 			e.printStackTrace();
 			throw e;
 		}
+	}
+
+	private boolean checkForCompletion() {
+		int sum = 0;
+		for(String key: crawlerStatusMap.keySet()) {
+			sum+=crawlerStatusMap.get(key).getTotalProcessed();
+		}
+		if(sum==maxRequests)
+			return true;
+		else
+			return false;
 	}
 
 	private void callForCheckpoint() {
@@ -150,7 +165,7 @@ public class MasterServlet extends HttpServlet{
 				JSONObject requestObject = new JSONObject();
 
 				requestObject.put("urls", new JSONArray(crawlerToUrlMap.get(key)));
-				requestObject.put("maxRequests", maxRequests);
+				requestObject.put("maxRequests", maxRequestsPerCrawler);
 				
 				//And here were are making life more complicated
 				String[] ipSet = new String[crawlerStatusMap.keySet().size()];

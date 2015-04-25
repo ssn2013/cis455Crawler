@@ -10,8 +10,12 @@
 			<param-value>/home/sruthi/seedUrls</param-value>
 		</init-param>
 		<init-param>
-			<param-name>MaxRequests</param-name>
+			<param-name>MaxRequestsPerCrawler</param-name>
 			<param-value>1000</param-value>
+		</init-param>
+		<init-param>
+		    <param-name>TotalMaxRequests</param-name>
+		    <param-value>10000</param-value>
 		</init-param>
 	</servlet>
 	<servlet-mapping>

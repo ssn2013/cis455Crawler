@@ -4,6 +4,13 @@ public class CrawlerStatus {
 	private String ipAddress;
 	private int port;
 	private String status;
+	private int totalProcessed;
+	public int getTotalProcessed() {
+		return totalProcessed;
+	}
+	public void setTotalProcessed(int totalProcessed) {
+		this.totalProcessed = totalProcessed;
+	}
 	public String getIpPortString() {
 		return ipAddress+":"+port;
 	}

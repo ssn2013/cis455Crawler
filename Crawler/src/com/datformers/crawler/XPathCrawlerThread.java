@@ -35,7 +35,7 @@ import com.datformers.crawler.info.RobotsTxtInfo;
 import com.datformers.crawler.resources.DomainRules;
 import com.datformers.crawler.resources.ResourceManagement;
 import com.datformers.crawler.resources.URLQueue;
-import com.datformers.crawler.resources.outgoingMap;
+import com.datformers.crawler.resources.OutgoingMap;
 import com.datformers.storage.DBWrapper;
 import com.datformers.storage.ParsedDocument;
 
@@ -51,7 +51,7 @@ public class XPathCrawlerThread implements Runnable{
 	public boolean newResource = false;
 	private XPathCrawler parent = null;
 	private static Set<String> visitedURL = new TreeSet<String>();
-	private outgoingMap map;
+	private OutgoingMap map;
 	private static String allowedMimeTypes[] = {"text/html","text/xml", "application/xml","application/atom+xml",
 		"application/dash+xml", "application/rdf+xml", "application/rss+xml",
 		"application/soap+xml", "application/xhtml+xml", "application/xop+xml",
@@ -366,7 +366,7 @@ public class XPathCrawlerThread implements Runnable{
 	}
 	
 	public ArrayList<String> divideExtractedLinks(ArrayList<String> extractedUrls) {
-		map = outgoingMap.getInstance();
+		map = OutgoingMap.getInstance();
 		ArrayList<String> systemUrls = new ArrayList<String>();
 		BigInteger b = null;
 		for(String url:extractedUrls) {

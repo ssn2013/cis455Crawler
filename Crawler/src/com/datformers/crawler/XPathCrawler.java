@@ -10,7 +10,7 @@ import java.util.List;
 import com.datformers.crawler.info.RobotsTxtInfo;
 import com.datformers.crawler.resources.DomainRules;
 import com.datformers.crawler.resources.URLQueue;
-import com.datformers.crawler.resources.outgoingMap;
+import com.datformers.crawler.resources.OutgoingMap;
 import com.datformers.storage.DBWrapper;
 
 /*
@@ -87,7 +87,7 @@ public class XPathCrawler {
 		String delim=";;|;;";
 		URLQueue queue = URLQueue.getInstance(); //instance of the queue of URLs
 		String keys[]=CRAWLERS;
-		outgoingMap.createInstance(keys); // create a separate output set of URLs for each worker
+		OutgoingMap.createInstance(keys); // create a separate output set of URLs for each worker
 		//have to check if we have to resume operation or use seed urls
 		if(STARTING_URLS!=null) {
 

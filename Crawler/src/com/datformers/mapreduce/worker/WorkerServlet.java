@@ -93,11 +93,13 @@ public class WorkerServlet extends HttpServlet {
 		if(request.getPathInfo().contains("stopcrawl")) {
 			processStopCrawl(request, response); //redirect to method handling crawl stop
 			status = "idle";
+		} else {
+			response.setContentType("text/html");
+			PrintWriter out = response.getWriter();
+			out.println("<html><head><title>Worker</title></head>");
+			out.println("<body>Hi, I am the worker!</body></html>");
 		}
-//		response.setContentType("text/html");
-//		PrintWriter out = response.getWriter();
-//		out.println("<html><head><title>Worker</title></head>");
-//		out.println("<body>Hi, I am the worker!</body></html>");
+
 	}
 
 	/*

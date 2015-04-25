@@ -16,13 +16,13 @@ import com.datformers.crawler.XPathCrawler;
 /*
  * Class implementing the HashMap of URLs
  */
-public class outgoingMap {
+public class OutgoingMap {
 	//private HashMap<String,Set<String>> outgoingCrawlQueue= new HashMap<String,Set<String>>();
 	private List<Set<String>> outgoingCrawlQueue;
 	public BigInteger hashRange[];
-	private static outgoingMap queue = null;
+	private static OutgoingMap queue = null;
 	
-	private outgoingMap() {
+	private OutgoingMap() {
 
 	}
 	public void doHashDiv(String []workers) {
@@ -41,7 +41,7 @@ public class outgoingMap {
 	}
 	
 	public static void createInstance(String []keys) {
-		queue=new outgoingMap();
+		queue=new OutgoingMap();
 		queue.outgoingCrawlQueue= new ArrayList<Set<String>>(keys.length);
 		XPathCrawler.selfIndex=0;
 		for(int i=1;i<keys.length;i++) {
@@ -57,7 +57,7 @@ public class outgoingMap {
 		queue.hashRange=new BigInteger[keys.length];
 		queue.doHashDiv(keys);
 	}
-	public static outgoingMap getInstance() { 
+	public static OutgoingMap getInstance() { 
 		return queue;
 	}
 	/*

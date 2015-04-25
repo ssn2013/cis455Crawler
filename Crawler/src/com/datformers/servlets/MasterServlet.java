@@ -44,6 +44,7 @@ public class MasterServlet extends HttpServlet{
 					ipAddress = request.getRemoteAddr();  
 				}
 				int port = Integer.parseInt(request.getParameter("port").trim());
+				int totalProcessed  = Integer.parseInt(request.getParameter("requestsProcessed").trim());
 				String status = request.getParameter("status");
 				System.out.println("port: "+port+" status: "+status+" ipaddress: "+ipAddress);
 
@@ -52,6 +53,7 @@ public class MasterServlet extends HttpServlet{
 				crawlerStatus.setIpAddress(ipAddress);
 				crawlerStatus.setPort(port);
 				crawlerStatus.setStatus(status);
+				crawlerStatus.setTotalProcessed(totalProcessed);
 
 				System.out.println("IPAddres: "+crawlerStatus.getIpAddress()
 						+"\nPORT: "+crawlerStatus.getPort()

@@ -157,9 +157,7 @@ public class XPathCrawler {
 	private boolean checkForClose() {
 		boolean killTime = false;
 		
-		System.out.println("At the beginning of Check for Close");
 		while(!killTime) {
-			//System.out.println("At the beginning of the while loop");
 			if(MAX_PAGES!=-1 && count>MAX_PAGES) { //close if the number of processed URLs exceed the number of files allowed
 				
 				killTime = true;
@@ -177,7 +175,6 @@ public class XPathCrawler {
 			if(URLQueue.getInstance().isEmpty() && count >0) { //if queue is empty after some amount of processing
 				boolean kill = true;
 				for(Thread t: subThreads) {
-					//System.out.println("MAIN THREAD CHECK: State of Thread "+t.getName()+": "+t.getState());
 					if(t.isAlive() && (t.getState()!=Thread.State.WAITING)) { //if any thread is still working don't start shutdown process
 						kill = false;
 						break;

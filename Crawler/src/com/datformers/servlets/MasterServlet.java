@@ -44,7 +44,7 @@ public class MasterServlet extends HttpServlet{
 					ipAddress = request.getRemoteAddr();  
 				}
 				int port = Integer.parseInt(request.getParameter("port").trim());
-				int totalProcessed  = Integer.parseInt(request.getParameter("requestsProcessed").trim());
+				int totalProcessed  = Integer.parseInt(request.getParameter("totalURLCount").trim());
 				String status = request.getParameter("status");
 				System.out.println("port: "+port+" status: "+status+" ipaddress: "+ipAddress);
 

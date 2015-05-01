@@ -52,12 +52,10 @@ public class DBWrapper {
 		store.sync();
 	}
 	public static void close() {
-		//System.out.println("\nClose method called");
 		if(!dbOpen) return;
 		dbOpen=false;
 		if (store != null) {
 			try {
-				//System.out.println("\nGonna close wrapper");
 				store.close();
 			} catch(DatabaseException dbe) {
 				System.err.println("\nError closing store: " +

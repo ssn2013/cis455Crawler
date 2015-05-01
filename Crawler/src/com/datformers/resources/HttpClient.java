@@ -8,6 +8,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,7 +65,10 @@ public class HttpClient {
 	}
 	
 	public String getHost(String url) {
-		host = url.substring(url.indexOf('/')+2); //remove protocol part
+		if(url.startsWith("http")) 
+			host = url.substring(url.indexOf('/')+2); //remove protocol part
+		else
+			host = url.substring(url.indexOf('/')+1);
 		if(host.contains("/"))
 			host = host.substring(0, host.indexOf('/'));//remove any additional paths 
 		return host;
@@ -77,6 +83,10 @@ public class HttpClient {
 		for(String key: requestHeaders.keySet()) 
 			requestBuffer.append(key+": "+requestHeaders.get(key)+"\n");
 		return requestBuffer.toString();
+	}
+	
+	public void clearResponseHeaders() {
+		responseHeaders = new HashMap<String, String>();
 	}
 	
 	/*
@@ -124,6 +134,7 @@ public class HttpClient {
 	 */
 	public void parseResponse() throws IOException {
 		BufferedReader br = null;
+		clearResponseHeaders();
 		if(isHTTPS) { //https use a connection objects and handle headers and body separately
 			Map<String, List<String>> headers = connection.getHeaderFields();
 			for(String key: headers.keySet()) {
@@ -132,6 +143,9 @@ public class HttpClient {
 				}
 			}
 			responseStatusCode = connection.getResponseCode();
+			addResponseHeaders("Content-Type", connection.getContentType());
+			if(getResponseHeader("Content-Length")==null)
+				addResponseHeaders("Content-Length", ""+connection.getContentLength());
 			if(connectionInputStream==null) //Input stream having body
 				System.out.println("Connection null inside parseResponses");
 			/*
@@ -168,8 +182,7 @@ public class HttpClient {
 		bodyInputStream = new ByteArrayInputStream(body.getBytes()); //Create an InputStream of the body and return the same
 		
 		//Setting as HTML or not based on content-type
-		String value = getResponseHeader("Content-Type"); 
-		//System.out.println("IN PARSE RESPONSE: URL: "+url+" Content-type:-"+value);
+		String value = getResponseHeader("Content-Type");
 		if(value == null)
 			isHtml = true;
 		else {
@@ -182,7 +195,7 @@ public class HttpClient {
 	 * Method connects to the given host, makes a GET request, fetches the data and parses the response
 	 * It returns an InputStream of the body that can be parsed 
 	 */
-	public InputStream makeGetRequest(String URL, int port, Map<String, String>  urlParams) { 
+	public InputStream makeGetRequest(String URL, int port, Map<String, String>  urlParams) {
 		PrintWriter outWriter = null;
 		Socket socket = null;
 		this.url = URL;
@@ -211,15 +224,15 @@ public class HttpClient {
 				}
 				this.url = buf.toString();
 			}
-			
+			method = "GET";
 			if(!isHTTPS) {
-				socket = new Socket(host, port);
+				String hostName = host.split(":")[0];
+				socket = new Socket(hostName, port);
 				if(port==80 && socket==null)
-					socket = new Socket(host, 8080); //if connection to port 80 fails, try 8080
+					socket = new Socket(hostName, 8080); //if connection to port 80 fails, try 8080
 				connectionOutputStream = socket.getOutputStream();
 				connectionInputStream = socket.getInputStream();
 				outWriter = new PrintWriter(connectionOutputStream, true);
-				method = "GET";
 				 //Request as a string
 				String requestString = getRequestString();
 				outWriter.println(requestString); //making the request
@@ -228,8 +241,13 @@ public class HttpClient {
 				URL oracle = new URL(url);
 				connection = (HttpsURLConnection)oracle.openConnection();
 				//Write Headers
+				connection.setRequestMethod(method);
 				for(Entry<String, String> entry: requestHeaders.entrySet()) {
-					connection.addRequestProperty(entry.getKey(), entry.getValue());
+					if(entry.getKey().equalsIgnoreCase("if-modified-since")) {
+						setIfModifiedSince(entry.getValue());
+						continue;
+					}
+					connection.setRequestProperty(entry.getKey(), entry.getValue());
 				}
 				connection.setDoOutput(true);
 				connectionOutputStream = connection.getOutputStream(); //get output stream
@@ -254,6 +272,20 @@ public class HttpClient {
 				}
 			return bodyInputStream;
 		}
+	}
+	public void setIfModifiedSince(String value) {
+		
+
+		SimpleDateFormat f = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z");
+		Date d = null;
+		try {
+			d = f.parse(value);
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		long milliseconds = d.getTime();
+		connection.setIfModifiedSince(milliseconds);
 	}
 	
 	/*
@@ -289,15 +321,15 @@ public class HttpClient {
 				}
 				this.url = buf.toString();
 			}
-			
+			method = "HEAD";
 			if(!isHTTPS) {
-				socket = new Socket(host, port);
+				String ip = host.split(":")[0];
+				socket = new Socket(ip, port);
 				if(port==80 && socket==null)
-					socket = new Socket(host, 8080); //if connection to port 80 fails, try 8080
+					socket = new Socket(ip, 8080); //if connection to port 80 fails, try 8080
 				connectionOutputStream = socket.getOutputStream();
 				connectionInputStream = socket.getInputStream();
 				outWriter = new PrintWriter(connectionOutputStream, true);
-				method = "HEAD";
 				 //Request as a string
 				String requestString = getRequestString();
 				outWriter.println(requestString); //making the request
@@ -306,8 +338,9 @@ public class HttpClient {
 				URL oracle = new URL(url);
 				connection = (HttpsURLConnection)oracle.openConnection();
 				//Write Headers
+				connection.setRequestMethod(method);
 				for(Entry<String, String> entry: requestHeaders.entrySet()) {
-					connection.addRequestProperty(entry.getKey(), entry.getValue());
+					connection.setRequestProperty(entry.getKey(), entry.getValue());
 				}
 				connection.setDoOutput(true);
 				connectionOutputStream = connection.getOutputStream(); //get output stream

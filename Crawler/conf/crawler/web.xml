@@ -15,7 +15,7 @@
          </init-param>
          <init-param>
            <param-name>master</param-name>
-           <param-value>158.130.108.162:8080</param-value>
+           <param-value>localhost:8080</param-value>
          </init-param>
          <init-param>
            <param-name>port</param-name>

@@ -106,8 +106,8 @@ public class XPathCrawlerThread implements Runnable{
 			boolean writeToDB = false;
 			Document doc = null;
 			resourceManagement = new HttpClient(); 
-			resourceManagement.addRequestHeader("User-Agent", "cis455crawler"); //User-agent header for requests
-			resourceManagement.addRequestHeader("Connection", "close"); //Connection close header to make the communications quick
+			resourceManagement.addRequestHeader("User-Agent", "cis455Crawler"); //User-agent header for requests
+			//resourceManagement.addRequestHeader("Connection", "close"); //Connection close header to make the communications quick
 
 			if(newResource) {  //For a new URL, fetch and parse robots.txt
 				if(parent.getRulesForDomain(getDomain(url))==null) {
@@ -121,7 +121,7 @@ public class XPathCrawlerThread implements Runnable{
 			//validate crawling with robots.txt rules
 			if(!isCrawlingAllowed(parent.getRulesForDomain(getDomain(url))))
 				return;
-			
+
 			synchronized (visitedURL) {
 				visitedURL.add(url);// adding to url processed set	
 			}
@@ -135,89 +135,93 @@ public class XPathCrawlerThread implements Runnable{
 				TimeZone gmtTime = TimeZone.getTimeZone("GMT");
 				format1.setTimeZone(gmtTime);
 				checkDate = format1.format(gotDoc.getLastAccessedDate());
+				resourceManagement.addRequestHeader("If-Modified-Since", checkDate);
+			} else {
+				System.out.println("DATA NOT FOUND IN DATABASE");
 			}
-			
-			resourceManagement.addRequestHeader("If-Modified-Since", checkDate);
+
 			//make head request  
 			resourceManagement.makeHeadRequest(url, 80, null);
+			System.out.println("URL: "+url+" STATUS: "+resourceManagement.getResponseStatusCode());
 			if(!(resourceManagement.getResponseStatusCode()==304)) //Checking unmodified date
 			{	
 				writeToDB=true;
-			//Check mime type conforms
-			String mimeType = resourceManagement.getResponseHeader("Content-Type");
-			boolean isAllowedType = false;
-			for(String allowedType: allowedMimeTypes) {
-				if(mimeType.toLowerCase().contains(allowedType)) {
-					isAllowedType = true;
-					break;
+				//Check mime type conforms
+				String mimeType = resourceManagement.getResponseHeader("Content-Type");
+				boolean isAllowedType = false;
+				for(String allowedType: allowedMimeTypes) {
+					if(mimeType.toLowerCase().contains(allowedType)) {
+						isAllowedType = true;
+						break;
+					}
 				}
-			}
-			if(!isAllowedType) {
-				System.out.println("Not allowed type: "+mimeType);
-				return;
-			}
+				if(!isAllowedType) {
+					System.out.println("Not allowed type: "+mimeType);
+					return;
+				}
 
-			//maximimum size check
-			if(resourceManagement.getResponseHeader("Content-Length")==null ) {
-				System.out.println("Invalid or missing header for Content-length");
-				return;
-			}
-			int sizeOfFile = Integer.parseInt(resourceManagement.getResponseHeader("Content-Length"));
-			if(sizeOfFile>parent.MAX_SIZE) {
-				System.out.println("Above maximum allowed size: "+sizeOfFile);
-				return;
-			}
+				//maximimum size check
+				if(resourceManagement.getResponseHeader("Content-Length")==null ) {
+					System.out.println("Invalid or missing header for Content-length");
+					return;
+				}
+				int sizeOfFile = Integer.parseInt(resourceManagement.getResponseHeader("Content-Length"));
+				if(sizeOfFile>parent.MAX_SIZE) {
+					System.out.println("Above maximum allowed size: "+sizeOfFile);
+					return;
+				}
 
-			//make get request
-			InputStream bodyStream = resourceManagement.makeGetRequest(url, 80, null);
+				//make get request
+				InputStream bodyStream = resourceManagement.makeGetRequest(url, 80, null);
 
-			//parse File
-			
-			try {
-				doc = parseDOM(bodyStream);
-			} catch (ParserConfigurationException | SAXException | IOException e) {
-				e.printStackTrace();
-				System.out.println("Parsing threw error: "+e.getMessage());
-			}
-			//extract links
-			if(doc==null) {
-				System.out.println("Some issue occurred in parsing, document object is null");
-				return;
-			}
+				if(resourceManagement.isHtml) {//Links are not extracted from files which are not HTML
+
+					//parse File
+					try {
+						doc = parseDOM(bodyStream);
+					} catch (ParserConfigurationException | SAXException | IOException e) {
+						e.printStackTrace();
+						System.out.println("Parsing threw error: "+e.getMessage());
+					}
+					//extract links
+					if(doc==null) {
+						System.out.println("Some issue occurred in parsing, document object is null");
+						return;
+					}
+					
+					ArrayList<String> extractedUrls = extractLinks(doc);
+					URLQueue queue = URLQueue.getInstance(); //url queue
+
+					//TODO: save this URL to a list of URLs, use this for URL seen
+
+					for(String str: extractedUrls) {
+						//TODO: check if extracted URL belongs same crawler, if so add to queue
+						//TODO: else add to some other Set for checkpointing phase
+						//				System.out.println(Thread.currentThread().getName()+" Pushing to Queue: "+str);
+						//System.out.println("adding to queue");
+						//				System.out.println("Adding:"+str);
+						queue.add(str); //add extracted links
+
+					}
+				}
+
 			}else {
-				if(resourceManagement.isHtml) {
-				try {
-					InputStream stream = new ByteArrayInputStream(gotDoc.getDocumentContents().getBytes(StandardCharsets.UTF_8));
-					doc = parseDOM(stream);
-				} catch (ParserConfigurationException | SAXException | IOException e) {
-					e.printStackTrace();
-					System.out.println("Parsing threw error: "+e.getMessage());
-				}
+				
+				//Get the Connected URLs from database and add to queue
+				if(gotDoc!=null) {
+					ArrayList<String> extractedLinks = gotDoc.getExtractedUrls();
+					URLQueue queue = URLQueue.getInstance(); //url queue
+					if(extractedLinks!=null && extractedLinks.size()!=0) {
+						for(String str: extractedLinks) {
+							queue.add(str);
+						}
+					}
 				}
 			}
 
-			if(resourceManagement.isHtml) {//Links are not extracted from files which are not HTML
-				
-			ArrayList<String> extractedUrls = extractLinks(doc);
-			URLQueue queue = URLQueue.getInstance(); //url queue
-			
-			//TODO: save this URL to a list of URLs, use this for URL seen
-			
-			for(String str: extractedUrls) {
-				//TODO: check if extracted URL belongs same crawler, if so add to queue
-				//TODO: else add to some other Set for checkpointing phase
-//				System.out.println(Thread.currentThread().getName()+" Pushing to Queue: "+str);
-				//System.out.println("adding to queue");
-//				System.out.println("Adding:"+str);
-				queue.add(str); //add extracted links
-				
-			}
-			}
-
-			
 			//Save Parsed file to database
 			if(writeToDB) {
-			writeFileToDatabase();
+				writeFileToDatabase();
 			}
 		} catch (Exception e) {
 			System.out.println("ERROR IN TASK: "+e.getMessage());
@@ -231,9 +235,8 @@ public class XPathCrawlerThread implements Runnable{
 	 */
 	private void writeFileToDatabase() {
 		ParsedDocument document = new ParsedDocument();
-		System.out.println("writing to db:"+url);
 		//System.out.println("url seen size="+visitedURL.size());
-		
+
 		document.setUrl(url);
 		document.setDocID(SHA1(url));
 		document.setExtractedUrls(outgoingLinks);
@@ -257,7 +260,8 @@ public class XPathCrawlerThread implements Runnable{
 		for(int i=0; i<links.getLength();  i++) {
 			NamedNodeMap attributes=links.item(i).getAttributes();
 			Node href=attributes.getNamedItem("href"); //extract absolute or relative url from href tag
-			Node rel=attributes.getNamedItem("rel");
+			if(href==null)
+				continue;
 			if(!href.getNodeValue().startsWith("http")) { //for absolute URLS, for the full URL of the new resource
 				String protocol = "http://";
 				if(isHttps)
@@ -284,7 +288,8 @@ public class XPathCrawlerThread implements Runnable{
 		for(int i=0; i<a.getLength();  i++) {
 			NamedNodeMap attributes=a.item(i).getAttributes();
 			Node href=attributes.getNamedItem("href");
-			Node rel=attributes.getNamedItem("rel");
+			if(href==null)
+				continue;
 			if(!href.getNodeValue().startsWith("http")) {
 				String protocol = "http://";
 				if(isHttps)
@@ -315,15 +320,15 @@ public class XPathCrawlerThread implements Runnable{
 		synchronized (visitedURL) {
 			for(String url:extractedUrls) {
 				if(!visitedURL.contains(url)) {
-				filteredUrls.add(url);	
-				//visitedURL.add(url);	
+					filteredUrls.add(url);	
+					//visitedURL.add(url);	
 				}
 			}
 		}
 		//return extractedUrls;
 		return (divideExtractedLinks(filteredUrls));
 	}
-	
+
 	public BigInteger convertToBigInt(byte[] data) {
 		StringBuffer buf = new StringBuffer();
 		for (int i = 0; i < data.length; i++) {
@@ -346,14 +351,14 @@ public class XPathCrawlerThread implements Runnable{
 	 */
 	public BigInteger SHA1(String text)  {
 		try {
-		MessageDigest md;
+			MessageDigest md;
 			md = MessageDigest.getInstance("SHA-1");
-		
-		byte[] sha1hash = new byte[40];
-		md.update(text.getBytes("iso-8859-1"), 0, text.length());
-		sha1hash = md.digest();
-		// String string=convertToHex(sha1hash);
-		return convertToBigInt(sha1hash);
+
+			byte[] sha1hash = new byte[40];
+			md.update(text.getBytes("iso-8859-1"), 0, text.length());
+			sha1hash = md.digest();
+			// String string=convertToHex(sha1hash);
+			return convertToBigInt(sha1hash);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -361,14 +366,14 @@ public class XPathCrawlerThread implements Runnable{
 		return null;
 		// return new BigInteger(sha1hash);
 	}
-	
+
 	public ArrayList<String> divideExtractedLinks(ArrayList<String> extractedUrls) {
 		map = OutgoingMap.getInstance();
 		ArrayList<String> systemUrls = new ArrayList<String>();
 		BigInteger b = null;
 		for(String url:extractedUrls) {
-				b = SHA1(url);
-				//System.out.println("key:"+key+"="+b);
+			b = SHA1(url);
+			//System.out.println("key:"+key+"="+b);
 			int index = -1;
 			for (int i = 0; i < map.hashRange.length; i++) {
 				if (b.compareTo(map.hashRange[i]) <= 0) {
@@ -409,7 +414,7 @@ public class XPathCrawlerThread implements Runnable{
 				}
 			}
 		}
-		
+
 		//Testing time
 		//System.out.println("Domain TIME: "+rulesForDomain.getNextAccessTime());
 		if(!newResource) { //for an already encoutered domain
@@ -486,9 +491,9 @@ public class XPathCrawlerThread implements Runnable{
 			document = tidy.parseDOM(is, null); //Jtidy used to parse HTML
 		} else { //xml
 			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-		    DocumentBuilder documentBuilder = dbf.newDocumentBuilder();
-		    document = documentBuilder.parse(is); 
+			DocumentBuilder documentBuilder = dbf.newDocumentBuilder();
+			document = documentBuilder.parse(is); 
 		}
-	    return document;
+		return document;
 	}
 }

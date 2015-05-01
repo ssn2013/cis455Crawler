@@ -432,11 +432,12 @@ public class HttpClient {
 			this.method = "POST";
 			this.url = URL;
 			this.host = getHost(URL);
+			
 			addRequestHeader("Content-Type", contentType); //details specific to request body
 			addRequestHeader("Content-Length", ""+body.length());
-			//			String requestString = getRequestString();
-			//			requestString += '\n'+body;
+			
 			String requestString = body;
+			
 
 			//Open socket and do read and write
 			URL oracle = new URL(url);
@@ -448,24 +449,21 @@ public class HttpClient {
 				HTTPconnection.setRequestProperty(entry.getKey(), entry.getValue());
 			}
 			System.out.println("HTTPCLIENT: REQUEST BODY SENT: "+requestString);
-			HTTPconnection.setDoInput(true);
 			HTTPconnection.setDoOutput(true);
+			HTTPconnection.setDoInput(true);
+			
 			connectionOutputStream = HTTPconnection.getOutputStream();
 			if(connectionOutputStream==null) {
 				System.out.println("HTTPCLIENT: CONNECTION STREAM NULL");
 			}
-			connectionInputStream = HTTPconnection.getInputStream();
+			
 			//connectionOutputStream.write(requestString.getBytes());
-			//OutputStreamWriter writer  = new OutputStreamWriter(connectionOutputStream);
-			//writer.write(requestString);
-			//connectionOutputStream.flush();
-			//connectionOutputStream.close();
-			//writer.close();
-			DataOutputStream ws = new DataOutputStream(connectionOutputStream);
-			ws.write(requestString.getBytes(Charset.forName( "UTF-8" )));
-			ws.flush();
-			ws.close();
+			OutputStreamWriter writer  = new OutputStreamWriter(connectionOutputStream);
+			writer.write(requestString);
+			connectionOutputStream.flush();
 
+			writer.close();
+			connectionInputStream = HTTPconnection.getInputStream();
 			BufferedReader rd = new BufferedReader(new InputStreamReader(connectionInputStream));
 			String line = null;
 			StringBuffer response = new StringBuffer(); 
@@ -474,8 +472,9 @@ public class HttpClient {
 				response.append('\n');
 			}
 			rd.close();
+
 			parseResponse();
-			//System.out.println("In HttpClient:makePostRequest: Request made: "+requestString+" Response: "+responseCode);
+
 		} catch (Exception e) {
 
 		} finally {

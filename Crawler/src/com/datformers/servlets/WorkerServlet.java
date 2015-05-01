@@ -172,17 +172,21 @@ public class WorkerServlet extends HttpServlet {
 	}
 	private void processRunCrawl(HttpServletRequest request,
 			HttpServletResponse response) {
+		System.out.println("AND WE GOT CRAWL FROM MASTER");
 		try {
 			//save the WorkerServlet object in XPathCrawler
 			XPathCrawler.setWorkerServletOb(this);
 			StringBuilder buffer = new StringBuilder();
 			BufferedReader reader = request.getReader();
-			String line;
+			String line = null;
+			System.out.println("WORSER SERVLET: REQUEST: "+request.getContentType());
 			while ((line = reader.readLine()) != null) {
+				System.out.println("WORKER SERVLET: REQUEST BODY LINE GOT: "+line);
 				buffer.append(line + "\n");
 			}
 			String body = buffer.toString();
 			JSONObject obj;
+			System.out.println("GOT BODY FROM MASTER FOR RUN: "+body);
 			obj = new JSONObject(body);
 			JSONArray url = obj.getJSONArray("urls");
 			JSONArray crawlWorkers = obj.getJSONArray("crawler");
@@ -212,6 +216,11 @@ public class WorkerServlet extends HttpServlet {
 			CrawlerStartHelper myrunnable = new CrawlerStartHelper(args,seedUrl,otherWorkers);
 	     	new Thread(myrunnable).start();
 			
+	     	response.setContentType("text/plain");
+	     	String responseSTUFF = "HELLO";
+	     	response.setContentLength(responseSTUFF.getBytes().length);
+	     	response.getWriter().println(responseSTUFF);
+	     	
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

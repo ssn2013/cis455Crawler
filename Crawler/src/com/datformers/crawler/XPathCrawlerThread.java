@@ -141,6 +141,7 @@ public class XPathCrawlerThread implements Runnable{
 				System.out.println("DATA NOT FOUND IN DATABASE");
 			}
 
+			System.out.println("HELLO URL: "+url+" STATUS: "+resourceManagement.getResponseStatusCode());
 			//make head request  
 			resourceManagement.makeHeadRequest(url, 80, null);
 			if (resourceManagement.getResponseStatusCode()==302) {

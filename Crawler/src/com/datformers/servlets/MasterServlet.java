@@ -38,7 +38,6 @@ public class MasterServlet extends HttpServlet{
 
 	public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException  {
 		try{
-			System.out.println("BODwedewe");
 			if(request.getPathInfo()!=null&&request.getPathInfo().contains("workerstatus")) {
 				
 				String ipAddress = request.getHeader("X-FORWARDED-FOR");
@@ -202,10 +201,10 @@ public class MasterServlet extends HttpServlet{
 				ipSet[0] = key;
 				requestObject.put("crawler", new JSONArray(ipSet));
 
-				System.out.println("SENDING: TO:"+"http://"+key+"/crawler/startcrawl"
-						+"\nPORT: "+crawlerStatusMap.get(key).getPort()
-						+"\nCONTENT TYPE: "+"application/json"
-						+"\nBODY STRING: "+requestObject.toString());
+//				System.out.println("SENDING: TO:"+"http://"+key+"/crawler/startcrawl"
+//						+"\nPORT: "+crawlerStatusMap.get(key).getPort()
+//						+"\nCONTENT TYPE: "+"application/json"
+//						+"\nBODY STRING: "+requestObject.toString());
 
 				client.makePostRequest("http://"+key+"/crawler/startcrawl", crawlerStatusMap.get(key).getPort(), "application/json", requestObject.toString());
 			}

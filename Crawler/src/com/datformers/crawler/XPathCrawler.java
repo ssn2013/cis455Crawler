@@ -165,14 +165,7 @@ public class XPathCrawler {
 			System.out.println("Store visited crawl data");
 			saveVisitedToDB();
 			System.out.println("crawling ended");
-			// if(STOP_CRAWLER) {
-			// DBWrapper.close(); //closing DB environment
-			// System.out.println("Database Closed");
-			// }
-			// else {
 			DBWrapper.commit();
-			// System.out.println("Database Committed");
-			// }
 			WorkerServlet.STATUS = "done";
 			ws.updateStatusToMaster();
 		} catch (Exception e) {

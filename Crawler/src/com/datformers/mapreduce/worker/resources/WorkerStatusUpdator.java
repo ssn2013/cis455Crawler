@@ -41,13 +41,7 @@ public class WorkerStatusUpdator implements Runnable {
 				requestParameters.put("totalURLCount", "" + XPathCrawler.totalURLCount);
 				String urlString = "http://" + masterIP + ":" + masterPort
 						+ "/master/workerstatus";
-				//System.out.println("WORKER: KILL ME: STATUS: "+parent.STATUS+" URL: "+urlString);
 				client.makeGetRequest(urlString, Integer.parseInt(masterPort.trim()), requestParameters);
-//				if(client.getResponseCode()==200)
-//					System.out.println("WorkerStatusUpdator:run: Successful updation of master at: "+urlString);
-//				else 
-//					System.out.println("WorkerStatusUpdator:run: SUnsuccessful updation of master at: "+urlString+" returned: "+client.getResponseCode());
-
 				// Now Sleep
 				
 				Thread.sleep(10000);
@@ -55,9 +49,9 @@ public class WorkerStatusUpdator implements Runnable {
 			}
 		} catch (InterruptedException ie) {
 		
-//			ie.printStackTrace();
-//			System.out.println("Timed Updator of Worker interrupted: "
-//					+ ie.getMessage());
+			ie.printStackTrace();
+			System.out.println("Timed Updator of Worker interrupted: "
+					+ ie.getMessage());
 		}
 	}
 

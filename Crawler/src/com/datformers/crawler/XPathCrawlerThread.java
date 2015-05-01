@@ -1,17 +1,11 @@
 package com.datformers.crawler;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -69,7 +63,9 @@ public class XPathCrawlerThread implements Runnable{
 	 * Method to extract domain from a URL string
 	 */
 	private String getDomain(String url) {
-		String host = url.substring(url.indexOf('/')+2); //remove protocol part
+		String host =url;
+		if(url.startsWith("http"))
+			host = url.substring(url.indexOf('/')+2); //remove protocol part
 		if(host.contains("/"))
 			host = host.substring(0, host.indexOf('/'));//remove any additional paths 
 		return host;
@@ -95,8 +91,8 @@ public class XPathCrawlerThread implements Runnable{
 				executeTask(); //task of the thread
 			}
 		} catch (InterruptedException e) {
-			//System.out.println("Crawler thread got interrupted :(");
-			//e.printStackTrace();
+			System.out.println("Crawler thread got interrupted :(");
+			e.printStackTrace();
 		}
 	}
 	/*
@@ -141,9 +137,9 @@ public class XPathCrawlerThread implements Runnable{
 				System.out.println("DATA NOT FOUND IN DATABASE");
 			}
 
-			System.out.println("HELLO URL: "+url+" STATUS: "+resourceManagement.getResponseStatusCode());
 			//make head request  
 			resourceManagement.makeHeadRequest(url, 80, null);
+			System.out.println("HELLO URL: "+url+" STATUS: "+resourceManagement.getResponseStatusCode());
 			if (resourceManagement.getResponseStatusCode()==302) {
 				visitedURL.add(url);
 				String newUrl=resourceManagement.getResponseHeader("location");
@@ -226,7 +222,14 @@ public class XPathCrawlerThread implements Runnable{
 					URLQueue queue = URLQueue.getInstance(); //url queue
 					if(extractedLinks!=null && extractedLinks.size()!=0) {
 						for(String str: extractedLinks) {
-							queue.add(str);
+							synchronized (visitedURL) {
+								if(!visitedURL.contains(str)) {
+									VisitedURLStore gotDoc1=checkDB(str);
+									if(gotDoc1!=null) continue;	
+									visitedURL.add(str);
+									queue.add(str);
+								}
+							}
 						}
 					}
 				}
@@ -258,7 +261,6 @@ public class XPathCrawlerThread implements Runnable{
 		PrimaryIndex<BigInteger, ParsedDocument> indexDoc = wrapper.getStore().getPrimaryIndex(BigInteger.class, ParsedDocument.class);
 		indexDoc.put(document);		
 		XPathCrawler.addCounter(); //increase counter of files succesfully fetched and parsed
-		//System.out.println("files written to db="+XPathCrawler.count);
 		if(!newResource) { //update next allowed access time for domain
 			DomainRules domainRules = parent.getRulesForDomain(getDomain(url));
 			domainRules.setNextAccessTime();
@@ -381,7 +383,6 @@ public class XPathCrawlerThread implements Runnable{
 			// String string=convertToHex(sha1hash);
 			return convertToBigInt(sha1hash);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return null;
@@ -418,11 +419,11 @@ public class XPathCrawlerThread implements Runnable{
 		if(disallowedLinks == null)
 			disallowedLinks = rulesForDomain.getRobotsTxtInfo().getDisallowedLinks("*"); //If matches to crawler can't be found, get rules for all
 		if(disallowedLinks==null|| disallowedLinks.size()==0) {
-			//System.out.println("Coudn't get disallowed links for *");
+			System.out.println("Coudn't get disallowed links for *");
 			return false;
 		}
 		if(disallowedLinks.get(0).equalsIgnoreCase("/")) {
-			//System.out.println("All crawlers banned");
+			System.out.println("All crawlers banned");
 			return false;
 		}
 		for(String str: disallowedLinks) {
@@ -430,14 +431,13 @@ public class XPathCrawlerThread implements Runnable{
 				break;
 			else {
 				if(url.contains(str)) {
-					//System.out.println("Url matched disallowed pattern: "+str);
+					System.out.println("Url matched disallowed pattern: "+str);
 					return false;
 				}
 			}
 		}
 
 		//Testing time
-		//System.out.println("Domain TIME: "+rulesForDomain.getNextAccessTime());
 		if(!newResource) { //for an already encoutered domain
 			Date date = new Date();
 			Date then = rulesForDomain.getNextAccessTime(); //get last accessed time

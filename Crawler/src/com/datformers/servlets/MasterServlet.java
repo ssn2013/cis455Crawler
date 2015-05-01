@@ -38,7 +38,9 @@ public class MasterServlet extends HttpServlet{
 
 	public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException  {
 		try{
+			System.out.println("BODwedewe");
 			if(request.getPathInfo()!=null&&request.getPathInfo().contains("workerstatus")) {
+				
 				String ipAddress = request.getHeader("X-FORWARDED-FOR");
 				if (ipAddress == null) {  
 					ipAddress = request.getRemoteAddr();  
@@ -47,7 +49,7 @@ public class MasterServlet extends HttpServlet{
 				int totalProcessed  = Integer.parseInt(request.getParameter("totalURLCount").trim());
 				String status = request.getParameter("status");
 				System.out.println("port: "+port+" status: "+status+" ipaddress: "+ipAddress);
-
+				
 				//set crawler status
 				CrawlerStatus crawlerStatus = new CrawlerStatus();
 				crawlerStatus.setIpAddress(ipAddress);
@@ -220,6 +222,6 @@ public class MasterServlet extends HttpServlet{
 
 	public void doPost(HttpServletRequest request, HttpServletResponse response) 
 			throws java.io.IOException {
-
+		
 	}
 }

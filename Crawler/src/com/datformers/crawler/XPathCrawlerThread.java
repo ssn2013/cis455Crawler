@@ -38,6 +38,7 @@ import com.datformers.crawler.resources.OutgoingMap;
 import com.datformers.resources.HttpClient;
 import com.datformers.storage.DBWrapper;
 import com.datformers.storage.ParsedDocument;
+import com.datformers.storage.VisitedURLStore;
 
 /*
  * Class of individual crawler threads that actually process the file
@@ -50,7 +51,7 @@ public class XPathCrawlerThread implements Runnable{
 	public ArrayList<String> outgoingLinks=new ArrayList<String>();
 	public boolean newResource = false;
 	private XPathCrawler parent = null;
-	private static Set<String> visitedURL = new TreeSet<String>();
+	public static Set<String> visitedURL = new TreeSet<String>();
 	private OutgoingMap map;
 	private static String allowedMimeTypes[] = {"text/html","text/xml", "application/xml","application/atom+xml",
 		"application/dash+xml", "application/rdf+xml", "application/rss+xml",
@@ -142,8 +143,14 @@ public class XPathCrawlerThread implements Runnable{
 
 			//make head request  
 			resourceManagement.makeHeadRequest(url, 80, null);
-			System.out.println("URL: "+url+" STATUS: "+resourceManagement.getResponseStatusCode());
-			if(!(resourceManagement.getResponseStatusCode()==304)) //Checking unmodified date
+			if (resourceManagement.getResponseStatusCode()==302) {
+				visitedURL.add(url);
+				String newUrl=resourceManagement.getResponseHeader("location");
+				if(!visitedURL.contains(newUrl)) visitedURL.add(newUrl);
+				return;
+				//TODO code to include redirect url in queue
+			}
+			else if(!(resourceManagement.getResponseStatusCode()==304)) //Checking unmodified date
 			{	
 				writeToDB=true;
 				//Check mime type conforms
@@ -320,6 +327,10 @@ public class XPathCrawlerThread implements Runnable{
 		synchronized (visitedURL) {
 			for(String url:extractedUrls) {
 				if(!visitedURL.contains(url)) {
+					PrimaryIndex<BigInteger, VisitedURLStore> indexDocuments = wrapper.getStore().getPrimaryIndex(BigInteger.class, VisitedURLStore.class);
+					BigInteger hashUrl=SHA1(url);
+					VisitedURLStore gotDoc = indexDocuments.get(hashUrl);
+					if(gotDoc!=null) continue;
 					filteredUrls.add(url);	
 					//visitedURL.add(url);	
 				}

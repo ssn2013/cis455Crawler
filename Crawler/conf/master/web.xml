@@ -7,7 +7,7 @@
 		<servlet-class>com.datformers.servlets.MasterServlet</servlet-class>
 		<init-param>
 			<param-name>SeedURlFile</param-name>
-			<param-value>/home/sruthi/seed/seedUrlsBasic</param-value>
+			<param-value>/home/dpk/Documents/IWS/cis455Proj/Crawler/seed/seedUrlsBasic</param-value>
 		</init-param>
 		<init-param>
 			<param-name>MaxRequestsPerCrawler</param-name>

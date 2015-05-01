@@ -36,7 +36,8 @@ public class HttpClient {
 	private String body;
 	private boolean isHTTPS = false; 
 	private Socket socket; 
-	private HttpsURLConnection connection = null;
+	private HttpsURLConnection HTTPSconnection = null;
+	private HttpURLConnection HTTPconnection = null;
 	
 	/*
 	 * Method to add and keep track of header requests
@@ -136,16 +137,16 @@ public class HttpClient {
 		BufferedReader br = null;
 		clearResponseHeaders();
 		if(isHTTPS) { //https use a connection objects and handle headers and body separately
-			Map<String, List<String>> headers = connection.getHeaderFields();
+			Map<String, List<String>> headers = HTTPSconnection.getHeaderFields();
 			for(String key: headers.keySet()) {
 				for(String value: headers.get(key)) {
 					addResponseHeaders(key, value);
 				}
 			}
-			responseStatusCode = connection.getResponseCode();
-			addResponseHeaders("Content-Type", connection.getContentType());
+			responseStatusCode = HTTPSconnection.getResponseCode();
+			addResponseHeaders("Content-Type", HTTPSconnection.getContentType());
 			if(getResponseHeader("Content-Length")==null)
-				addResponseHeaders("Content-Length", ""+connection.getContentLength());
+				addResponseHeaders("Content-Length", ""+HTTPSconnection.getContentLength());
 			if(connectionInputStream==null) //Input stream having body
 				System.out.println("Connection null inside parseResponses");
 			/*
@@ -155,19 +156,38 @@ public class HttpClient {
 				*/
 			br = new BufferedReader(new InputStreamReader(connectionInputStream));
 		} else { //For http calls
-			br = new BufferedReader(new InputStreamReader(connectionInputStream));
-			String line = null;
-			while((line = br.readLine())!=null ) { //Read line by line and parse response
-				if(line.equals("")) //End of header portion, marked with a new line
-					break;
-				if(line.contains(":")) { //Headers (headers contain :)
-					String elements[] = line.split(":"); //splitting of header to key and value
-					addResponseHeaders(elements[0].trim(), elements[1].trim());
-				} else {
-					String elements[] = line.split(" "); //First line of request
-					responseStatusCode = Integer.parseInt(elements[1]); //Parsing and storing response status
+//			br = new BufferedReader(new InputStreamReader(connectionInputStream));
+//			String line = null;
+//			
+//			while((line = br.readLine())!=null ) { //Read line by line and parse response
+//				if(line.equals("")) //End of header portion, marked with a new line
+//					break;
+//				if(line.contains(":")) { //Headers (headers contain :)
+//					String elements[] = line.split(":"); //splitting of header to key and value
+//					addResponseHeaders(elements[0].trim(), elements[1].trim());
+//				} else {
+//					String elements[] = line.split(" "); //First line of request
+//					responseStatusCode = Integer.parseInt(elements[1]); //Parsing and storing response status
+//				}
+//			}
+			Map<String, List<String>> headers = HTTPconnection.getHeaderFields();
+			for(String key: headers.keySet()) {
+				for(String value: headers.get(key)) {
+					addResponseHeaders(key, value);
 				}
 			}
+			responseStatusCode = HTTPconnection.getResponseCode();
+			addResponseHeaders("Content-Type", HTTPconnection.getContentType());
+			if(getResponseHeader("Content-Length")==null)
+				addResponseHeaders("Content-Length", ""+HTTPconnection.getContentLength());
+			if(connectionInputStream==null) //Input stream having body
+				System.out.println("Connection null inside parseResponses");
+			/*
+			bodyInputStream = connectionInputStream;
+			if(bodyInputStream==null)
+				System.out.println("boyd in pustream null in parse response");
+				*/
+			br = new BufferedReader(new InputStreamReader(connectionInputStream));
 			
 
 		}
@@ -226,32 +246,55 @@ public class HttpClient {
 			}
 			method = "GET";
 			if(!isHTTPS) {
-				String hostName = host.split(":")[0];
-				socket = new Socket(hostName, port);
-				if(port==80 && socket==null)
-					socket = new Socket(hostName, 8080); //if connection to port 80 fails, try 8080
-				connectionOutputStream = socket.getOutputStream();
-				connectionInputStream = socket.getInputStream();
-				outWriter = new PrintWriter(connectionOutputStream, true);
-				 //Request as a string
-				String requestString = getRequestString();
-				outWriter.println(requestString); //making the request
-				outWriter.flush();
-			} else { //HTTPSUrlConnection used for https request
+//				String hostName = host.split(":")[0];
+//				socket = new Socket(hostName, port);
+//				if(port==80 && socket==null) {
+//					
+//					socket = new Socket(hostName, 8080);} //if connection to port 80 fails, try 8080
+//				connectionOutputStream = socket.getOutputStream();
+//				connectionInputStream = socket.getInputStream();
+//				outWriter = new PrintWriter(connectionOutputStream, true);
+//				 //Request as a string
+//				String requestString = getRequestString();
+//				outWriter.println(requestString); //making the request
+//				outWriter.flush();
+				System.out.println(url);
 				URL oracle = new URL(url);
-				connection = (HttpsURLConnection)oracle.openConnection();
+				
+				HTTPconnection = (HttpURLConnection)oracle.openConnection();
 				//Write Headers
-				connection.setRequestMethod(method);
+				HTTPconnection.setRequestMethod(method);
 				for(Entry<String, String> entry: requestHeaders.entrySet()) {
 					if(entry.getKey().equalsIgnoreCase("if-modified-since")) {
 						setIfModifiedSince(entry.getValue());
 						continue;
 					}
-					connection.setRequestProperty(entry.getKey(), entry.getValue());
+					HTTPconnection.setRequestProperty(entry.getKey(), entry.getValue());
 				}
-				connection.setDoOutput(true);
-				connectionOutputStream = connection.getOutputStream(); //get output stream
-				connectionInputStream = connection.getInputStream(); //get input stream
+				HTTPconnection.setInstanceFollowRedirects(false);
+				HTTPconnection.setDoOutput(false);
+				//connectionOutputStream = HTTPconnection.getOutputStream(); //get output stream
+				connectionInputStream = HTTPconnection.getInputStream(); //get input stream
+				
+				if(connectionInputStream==null)
+					System.out.println("CONNECTION INPUT STREAM NULL");
+				
+			} else { //HTTPSUrlConnection used for https request
+				URL oracle = new URL(url);
+				HTTPSconnection = (HttpsURLConnection)oracle.openConnection();
+				//Write Headers
+				HTTPSconnection.setRequestMethod(method);
+				for(Entry<String, String> entry: requestHeaders.entrySet()) {
+					if(entry.getKey().equalsIgnoreCase("if-modified-since")) {
+						setIfModifiedSince(entry.getValue());
+						continue;
+					}
+					HTTPSconnection.setRequestProperty(entry.getKey(), entry.getValue());
+				}
+				HTTPSconnection.setInstanceFollowRedirects(false);
+				HTTPSconnection.setDoOutput(false);
+				//connectionOutputStream = HTTPSconnection.getOutputStream(); //get output stream
+				connectionInputStream = HTTPSconnection.getInputStream(); //get input stream
 				if(connectionInputStream==null)
 					System.out.println("CONNECTION INPUT STREAM NULL");
 			}
@@ -285,7 +328,7 @@ public class HttpClient {
 			e.printStackTrace();
 		}
 		long milliseconds = d.getTime();
-		connection.setIfModifiedSince(milliseconds);
+		HTTPSconnection.setIfModifiedSince(milliseconds);
 	}
 	
 	/*
@@ -323,28 +366,43 @@ public class HttpClient {
 			}
 			method = "HEAD";
 			if(!isHTTPS) {
-				String ip = host.split(":")[0];
-				socket = new Socket(ip, port);
-				if(port==80 && socket==null)
-					socket = new Socket(ip, 8080); //if connection to port 80 fails, try 8080
-				connectionOutputStream = socket.getOutputStream();
-				connectionInputStream = socket.getInputStream();
-				outWriter = new PrintWriter(connectionOutputStream, true);
-				 //Request as a string
-				String requestString = getRequestString();
-				outWriter.println(requestString); //making the request
-				outWriter.flush();
+//				String ip = host.split(":")[0];
+//				socket = new Socket(ip, port);
+//				if(port==80 && socket==null)
+//					socket = new Socket(ip, 8080); //if connection to port 80 fails, try 8080
+//				connectionOutputStream = socket.getOutputStream();
+//				connectionInputStream = socket.getInputStream();
+//				outWriter = new PrintWriter(connectionOutputStream, true);
+//				 //Request as a string
+//				String requestString = getRequestString();
+//				outWriter.println(requestString); //making the request
+//				outWriter.flush();
+				URL oracle = new URL(url);
+				HTTPconnection = (HttpURLConnection)oracle.openConnection();
+				//Write Headers
+				HTTPconnection.setRequestMethod(method);
+				for(Entry<String, String> entry: requestHeaders.entrySet()) {
+					HTTPconnection.setRequestProperty(entry.getKey(), entry.getValue());
+				}
+				HTTPconnection.setInstanceFollowRedirects(false);
+				HTTPconnection.setDoOutput(false);
+				//connectionOutputStream = HTTPSconnection.getOutputStream(); //get output stream
+				connectionInputStream = HTTPSconnection.getInputStream(); //get input stream
+				if(connectionInputStream==null)
+					System.out.println("CONNECTION INPUT STREAM NULL");
+				
 			} else { //HTTPSUrlConnection used for https request
 				URL oracle = new URL(url);
-				connection = (HttpsURLConnection)oracle.openConnection();
+				HTTPSconnection = (HttpsURLConnection)oracle.openConnection();
 				//Write Headers
-				connection.setRequestMethod(method);
+				HTTPSconnection.setRequestMethod(method);
 				for(Entry<String, String> entry: requestHeaders.entrySet()) {
-					connection.setRequestProperty(entry.getKey(), entry.getValue());
+					HTTPSconnection.setRequestProperty(entry.getKey(), entry.getValue());
 				}
-				connection.setDoOutput(true);
-				connectionOutputStream = connection.getOutputStream(); //get output stream
-				connectionInputStream = connection.getInputStream(); //get input stream
+				HTTPSconnection.setInstanceFollowRedirects(false);
+				HTTPSconnection.setDoOutput(false);
+				//connectionOutputStream = HTTPSconnection.getOutputStream(); //get output stream
+				connectionInputStream = HTTPSconnection.getInputStream(); //get input stream
 				if(connectionInputStream==null)
 					System.out.println("CONNECTION INPUT STREAM NULL");
 			}
@@ -377,11 +435,29 @@ public class HttpClient {
 			requestString += '\n'+body;
 			
 			//Open socket and do read and write
-			Socket socket = new Socket(this.host.split(":")[0].trim(), port);
+			URL oracle = new URL(url);
+			HTTPconnection = (HttpURLConnection)oracle.openConnection();
+			//Write Headers
+			HTTPconnection.setRequestMethod(method);
+			for(Entry<String, String> entry: requestHeaders.entrySet()) {
+				HTTPconnection.setRequestProperty(entry.getKey(), entry.getValue());
+			}
+			
+			HTTPconnection.setDoOutput(true);
+			//connectionOutputStream = HTTPSconnection.getOutputStream(); //get output stream
+//			connectionInputStream = HTTPSconnection.getInputStream(); //get input stream
+//			if(connectionInputStream==null)
+//				System.out.println("CONNECTION INPUT STREAM NULL");
+			
+			
+			
+			
+//			Socket socket = new Socket(this.host.split(":")[0].trim(), port);
 			connectionOutputStream = socket.getOutputStream();
-			connectionInputStream = socket.getInputStream();
+			//connectionInputStream = socket.getInputStream();
 			connectionOutputStream.write(requestString.getBytes());
 			connectionOutputStream.flush();
+			connectionOutputStream.close();
 			parseResponse();
 			//System.out.println("In HttpClient:makePostRequest: Request made: "+requestString+" Response: "+responseCode);
 		} catch (Exception e) {

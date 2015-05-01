@@ -7,15 +7,15 @@
 	<servlet-class>com.datformers.servlets.WorkerServlet</servlet-class>
          <init-param>
            <param-name>storagedir</param-name>
-           <param-value>/home/sruthi/Desktop/tempstorage/store</param-value>
+           <param-value>/home/dpk/Documents/IWS/store</param-value>
          </init-param>
          <init-param>
            <param-name>databasedir</param-name>
-           <param-value>/home/sruthi/Desktop/tempstorage/database</param-value>
+           <param-value>/home/dpk/Documents/IWS/database</param-value>
          </init-param>
          <init-param>
            <param-name>master</param-name>
-           <param-value>localhost:8080</param-value>
+           <param-value>158.130.104.54:8080</param-value>
          </init-param>
          <init-param>
            <param-name>port</param-name>

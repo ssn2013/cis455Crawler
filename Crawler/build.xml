@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 
 <project name="HW2" default="build" basedir=".">
-    <property name="server.dir" location="/home/sruthi/Downloads/apache-tomcat-6.0.43/webapps"/>
+    <property name="server.dir" location="/home/dpk/Downloads/apache-tomcat-7.0.61/webapps"/>
     <property name="shared.root" location="${basedir}"/>
     <property name="file.separator" location="/"/>
     <property name="project.root" location="${basedir}"/>

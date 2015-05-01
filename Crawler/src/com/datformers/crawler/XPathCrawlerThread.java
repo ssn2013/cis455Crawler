@@ -146,7 +146,12 @@ public class XPathCrawlerThread implements Runnable{
 			if (resourceManagement.getResponseStatusCode()==302) {
 				visitedURL.add(url);
 				String newUrl=resourceManagement.getResponseHeader("location");
-				if(!visitedURL.contains(newUrl)) visitedURL.add(newUrl);
+				if(!visitedURL.contains(newUrl)) {
+					VisitedURLStore  Doc=checkDB(newUrl);
+					if(Doc==null) {
+					visitedURL.add(newUrl);
+					}
+				}
 				return;
 				//TODO code to include redirect url in queue
 			}
@@ -327,9 +332,7 @@ public class XPathCrawlerThread implements Runnable{
 		synchronized (visitedURL) {
 			for(String url:extractedUrls) {
 				if(!visitedURL.contains(url)) {
-					PrimaryIndex<BigInteger, VisitedURLStore> indexDocuments = wrapper.getStore().getPrimaryIndex(BigInteger.class, VisitedURLStore.class);
-					BigInteger hashUrl=SHA1(url);
-					VisitedURLStore gotDoc = indexDocuments.get(hashUrl);
+					VisitedURLStore gotDoc=checkDB(url);
 					if(gotDoc!=null) continue;
 					filteredUrls.add(url);	
 					//visitedURL.add(url);	
@@ -338,6 +341,12 @@ public class XPathCrawlerThread implements Runnable{
 		}
 		//return extractedUrls;
 		return (divideExtractedLinks(filteredUrls));
+	}
+	public VisitedURLStore checkDB(String url) {
+		PrimaryIndex<BigInteger, VisitedURLStore> indexDocuments = wrapper.getStore().getPrimaryIndex(BigInteger.class, VisitedURLStore.class);
+		BigInteger hashUrl=SHA1(url);
+		VisitedURLStore gotDoc = indexDocuments.get(hashUrl);
+		return gotDoc;
 	}
 
 	public BigInteger convertToBigInt(byte[] data) {

@@ -176,8 +176,8 @@ public class XPathCrawler {
 			
 			ws.updateStatusToMaster();
 		} catch (Exception e) {
-			DBWrapper.close();
-			System.out.pritln("Xpath crawler returned with error: "+e.getMessage());
+//			DBWrapper.close();
+			System.out.println("Xpath crawler returned with error: "+e.getMessage());
 			e.printStackTrace();
 			throw e;
 		}
@@ -236,7 +236,7 @@ public class XPathCrawler {
 			// kill All threads or else wait for them to complete
 			SYSTEM_SHUTDOWN = true; // state used by the threads to determine if
 			WorkerServlet.STATUS = "done";			// they should stop running
-
+			System.out.println("count==="+count);
 			for (Thread t : subThreads) {
 				if (t.getState() == Thread.State.WAITING)
 					t.interrupt(); // interrupt all waiting threads

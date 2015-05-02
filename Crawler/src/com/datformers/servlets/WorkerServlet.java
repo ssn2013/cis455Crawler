@@ -154,7 +154,7 @@ public class WorkerServlet extends HttpServlet {
 	private void processCreateCheckpoint(HttpServletRequest request,
 			HttpServletResponse response) {
 		//XPathCrawler.STOP_CRAWLER=true;
-		
+		System.out.println("wanting to create checkpoint");
 //		System.out.println("GOT REQUEST TO START CHECKPONITING: ");
 		if(OutgoingMap.getInstance()==null) {
 			System.out.println("Outgoing Map not existent");

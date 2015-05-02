@@ -123,7 +123,7 @@ public class XPathCrawlerThread implements Runnable{
 				visitedURL.add(url);// adding to url processed set
 				XPathCrawler.addCounter();
 			}
-			
+			//System.out.println("before fetch from db");
 			//check if in DB, if so add last modified date
 			PrimaryIndex<BigInteger, ParsedDocument> indexDocuments = wrapper.getStore().getPrimaryIndex(BigInteger.class, ParsedDocument.class);
 			BigInteger hashUrl=SHA1(url);
@@ -138,7 +138,7 @@ public class XPathCrawlerThread implements Runnable{
 			} else {
 //				System.out.println("DATA NOT FOUND IN DATABASE");
 			}
-
+			
 			//make head request  
 			resourceManagement.makeHeadRequest(url, 80, null);
 			System.out.println("HELLO URL: "+url+" STATUS: "+resourceManagement.getResponseStatusCode());
@@ -157,6 +157,7 @@ public class XPathCrawlerThread implements Runnable{
 			else if(!(resourceManagement.getResponseStatusCode()==304)) //Checking unmodified date
 			{	
 				writeToDB=true;
+				
 				//Check mime type conforms
 				String mimeType = resourceManagement.getResponseHeader("Content-Type");
 				boolean isAllowedType = false;
@@ -228,9 +229,10 @@ public class XPathCrawlerThread implements Runnable{
 					}
 				}
 			}
-
+			
 			//Save Parsed file to database
 			if(writeToDB) {
+				
 				writeFileToDatabase();
 			}
 		} catch (Exception e) {
@@ -287,7 +289,7 @@ public class XPathCrawlerThread implements Runnable{
 				}
 				extractedUrls.add(subUrl);
 			} else if( href.getNodeValue().contains(":") || href.getNodeValue().contains("#") || href.getNodeValue().toLowerCase().contains("javascript")) {
-				System.out.println("Removing possibility of matching non link cases");
+				//System.out.println("Removing possibility of matching non link cases");
 				continue;
 			} else {
 				extractedUrls.add(href.getNodeValue());
@@ -318,7 +320,7 @@ public class XPathCrawlerThread implements Runnable{
 				}
 				extractedUrls.add(subUrl);
 			} else if( href.getNodeValue().contains(":") || href.getNodeValue().contains("#") || href.getNodeValue().toLowerCase().contains("javascript")) { //href values can contain other things apart from URLs
-				System.out.println("Removing possibility of matching non link cases");
+				//System.out.println("Removing possibility of matching non link cases");
 				continue;
 			} else { //for href values with absolute URL
 				extractedUrls.add(href.getNodeValue());
@@ -503,6 +505,8 @@ public class XPathCrawlerThread implements Runnable{
 			tidy.setTidyMark(false);
 			tidy.setShowWarnings(false);
 			tidy.setQuiet(true);
+			tidy.setShowErrors(0);
+			//tidy.setErrout(null);
 			document = tidy.parseDOM(is, null); //Jtidy used to parse HTML
 		} else { //xml
 			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();

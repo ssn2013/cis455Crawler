@@ -11,11 +11,11 @@
 		</init-param>
 		<init-param>
 			<param-name>MaxRequestsPerCrawler</param-name>
-			<param-value>1000</param-value>
+			<param-value>100</param-value>
 		</init-param>
 		<init-param>
 		    <param-name>TotalMaxRequests</param-name>
-		    <param-value>10000</param-value>
+		    <param-value>20000</param-value>
 		</init-param>
 	</servlet>
 	<servlet-mapping>

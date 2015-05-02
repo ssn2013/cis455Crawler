@@ -58,14 +58,14 @@ public class WorkerServlet extends HttpServlet {
 		wk = new WorkerStatusUpdator(points[0].trim(), points[1].trim(), port, this); //create thread to send update status calls to master every 10 seconds
 		wkt = new Thread(wk);
 		wkt.start();
-		System.out.println("SERVLET STARTED:");
+//		System.out.println("SERVLET STARTED:");
 		
 		
 	}
 	
 	@Override
 	public void destroy() {
-		System.out.println("this is stopping");
+//		System.out.println("this is stopping");
 //		wkt.stop();
 		wkt.interrupt();
 		DBWrapper.close();
@@ -92,12 +92,15 @@ public class WorkerServlet extends HttpServlet {
 			throws java.io.IOException
 	{
 		if(request.getPathInfo().contains("stopcrawl")) {
+			System.out.println("WorkerServlet: StopCrawl");
 			processStopCrawl(request, response); //redirect to method handling crawl stop
 			STATUS = "idle";
 		} else if (request.getPathInfo().contains("checkpoint")) {
+			System.out.println("WorkerServlet: Checkpointin");
 			STATUS = "checkpointing";
 			processCreateCheckpoint(request, response); //redirect to method checkpointing
 		} else {
+			System.out.println("WorkerServlet: Normal GET request");
 			response.setContentType("text/html");
 			PrintWriter out = response.getWriter();
 			out.println("<html><head><title>Worker</title></head>");
@@ -112,11 +115,13 @@ public class WorkerServlet extends HttpServlet {
 	 */
 	@Override
 	public void doPost(HttpServletRequest request, HttpServletResponse response) {
-		System.out.println("WorkerServlet:doPost GOT: "+request.getPathInfo());
+//		System.out.println("WorkerServlet:doPost GOT: "+request.getPathInfo());
 		if(request.getPathInfo().contains("startcrawl")) {
+			System.out.println("WorkerServlet: start crawling");
 			STATUS = "crawling";
 			processRunCrawl(request, response); //redirect to method handling for crawl start	
 		} else if(request.getPathInfo().contains("pushdata")) {
+			System.out.println("WorkerServlet: Push data");
 			processPushData(request, response); //redirect to method handling pushdata calls
 		}
 	}
@@ -126,7 +131,7 @@ public class WorkerServlet extends HttpServlet {
 	 */
 	private void processPushData(HttpServletRequest request,
 			HttpServletResponse response) {
-		System.out.println("WorkerServlet:Processpushdata: Query from: "+request.getRemoteAddr()+" Port: "+request.getRemotePort());
+//		System.out.println("WorkerServlet:Processpushdata: Query from: "+request.getRemoteAddr()+" Port: "+request.getRemotePort());
 		try {
 			BufferedReader br = (BufferedReader)request.getReader();
 			String line = null;
@@ -140,7 +145,7 @@ public class WorkerServlet extends HttpServlet {
 
 	private void processStopCrawl(HttpServletRequest request,
 			HttpServletResponse response) {
-		System.out.println("GOT REQUEST TO STOP CRAWLER");
+//		System.out.println("GOT REQUEST TO STOP CRAWLER");
 		STATUS = "idle";
 		XPathCrawler.STOP_CRAWLER=true;
 		
@@ -150,7 +155,7 @@ public class WorkerServlet extends HttpServlet {
 			HttpServletResponse response) {
 		//XPathCrawler.STOP_CRAWLER=true;
 		
-		System.out.println("GOT REQUEST TO START CHECKPONITING: ");
+//		System.out.println("GOT REQUEST TO START CHECKPONITING: ");
 		if(OutgoingMap.getInstance()==null) {
 			System.out.println("Outgoing Map not existent");
 			response.setStatus(500);
@@ -159,7 +164,7 @@ public class WorkerServlet extends HttpServlet {
 		
 		
 			//Create a separate thread to parallely run checkpoint
-			System.out.println("WORKER: Checkpointing Part");
+//			System.out.println("WORKER: Checkpointing Part");
 			CheckPointThread ct=new CheckPointThread(this);
 			new Thread(ct).start();
 			
@@ -169,21 +174,21 @@ public class WorkerServlet extends HttpServlet {
 	
 	private void processRunCrawl(HttpServletRequest request,
 			HttpServletResponse response) {
-		System.out.println("AND WE GOT CRAWL FROM MASTER");
+		System.out.println("PROCESSING CRAWL REQUEST FROM MASTER");
 		try {
 			//save the WorkerServlet object in XPathCrawler
 			XPathCrawler.setWorkerServletOb(this);
 			StringBuilder buffer = new StringBuilder();
 			BufferedReader reader = request.getReader();
 			String line = null;
-			System.out.println("WORSER SERVLET: REQUEST: "+request.getContentType());
+//			System.out.println("WORSER SERVLET: REQUEST: "+request.getContentType());
 			while ((line = reader.readLine()) != null) {
-				System.out.println("WORKER SERVLET: REQUEST BODY LINE GOT: "+line);
+//				System.out.println("WORKER SERVLET: REQUEST BODY LINE GOT: "+line);
 				buffer.append(line + "\n");
 			}
 			String body = buffer.toString();
 			JSONObject obj;
-			System.out.println("GOT BODY FROM MASTER FOR RUN: "+body);
+//			System.out.println("GOT BODY FROM MASTER FOR RUN: "+body);
 			obj = new JSONObject(body);
 			JSONArray url = obj.getJSONArray("urls");
 			JSONArray crawlWorkers = obj.getJSONArray("crawler");
@@ -232,9 +237,9 @@ public class WorkerServlet extends HttpServlet {
 	 */
 	public synchronized void updateCompletion() {
 		countOfCompletedThreads++;
-		System.out.println("THREAD REPORTED COMPLETED: TOTAL COUNT: "+countOfCompletedThreads+" REQUIRED COUNT: "+otherWorkers.length+" reported by thread: "+Thread.currentThread().getName());
+//		System.out.println("THREAD REPORTED COMPLETED: TOTAL COUNT: "+countOfCompletedThreads+" REQUIRED COUNT: "+otherWorkers.length+" reported by thread: "+Thread.currentThread().getName());
 		if(countOfCompletedThreads == otherWorkers.length) { //check count of threads against required number of threads to see if all threads finished
-			System.out.println("System completed");
+//			System.out.println("System completed");
 			STATUS="idle";
 			updateStatusToMaster();
 		}
@@ -256,10 +261,10 @@ public class WorkerServlet extends HttpServlet {
 		HttpClient client = new HttpClient();
 
 		client.makeGetRequest(urlString, Integer.parseInt(masterIPPort.split(":")[1].trim()), requestParameters);
-		if(client.getResponseStatusCode()==200)
-			System.out.println("WorkerServlet:updateStatusWaiting: Successful updation of master at: "+urlString);
-		else 
-			System.out.println("WorkerServlet:updateStatusWaiting: Unsuccessful updation of master at: "+urlString+" returned: "+client.getResponseStatusCode());
+//		if(client.getResponseStatusCode()==200)
+//			System.out.println("WorkerServlet:updateStatusWaiting: Successful updation of master at: "+urlString);
+//		else 
+//			System.out.println("WorkerServlet:updateStatusWaiting: Unsuccessful updation of master at: "+urlString+" returned: "+client.getResponseStatusCode());
 
 	}
 
@@ -384,8 +389,8 @@ class CheckPointThread implements Runnable {
 			deleteDir(f);
 		}
 		if (!f.mkdir()) {
-			System.out.println(dir);
-			System.out.println("Error in creating Dir!!");
+//			System.out.println(dir);
+//			System.out.println("Error in creating Dir!!");
 			return;
 		}
 
@@ -395,17 +400,17 @@ class CheckPointThread implements Runnable {
 	public void run() {
 //		String spoolIn = ws.storageDir + "/spool_in";
 //		createDir(spoolIn);
-		System.out.println("RUN FOR CHECKPOINTING THREAD");
+//		System.out.println("RUN FOR CHECKPOINTING THREAD");
 		ws.fileManagementObject = new FileManagement(ws.storageDir, null, 0);
 		OutgoingMap map=OutgoingMap.getInstance();
 		URLQueue queue = URLQueue.getInstance();
 		ws.threadPool = new ArrayList<Thread>();
-		System.out.println("Threadpool created");
+//		System.out.println("Threadpool created");
 		for(int i=0;i<ws.otherWorkers.length;i++) {
-			System.out.println("other work: "+ws.otherWorkers[i]);
+//			System.out.println("other work: "+ws.otherWorkers[i]);
 			if(i==0) {
 				if(queue.isEmpty()) {
-					System.out.println("the queue is empty");
+//					System.out.println("the queue is empty");
 					ws.updateCompletion();
 					continue;
 				}

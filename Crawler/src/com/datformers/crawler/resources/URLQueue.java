@@ -45,4 +45,7 @@ public class URLQueue {
 	public synchronized boolean isEmpty() {
 		return urlQueue.isEmpty();
 	}
+	public void clear() {
+		urlQueue.clear();
+	}
 }

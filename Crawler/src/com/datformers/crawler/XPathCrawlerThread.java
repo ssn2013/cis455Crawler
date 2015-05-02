@@ -121,7 +121,7 @@ public class XPathCrawlerThread implements Runnable{
 
 			synchronized (visitedURL) {
 				visitedURL.add(url);// adding to url processed set
-				XPathCrawler.addCounter(); //increase counter of files succesfully fetched and parsed
+				XPathCrawler.addCounter();
 			}
 			
 			//check if in DB, if so add last modified date

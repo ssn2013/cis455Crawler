@@ -395,10 +395,10 @@ public class HttpClient {
 			//Write Headers
 			HTTPconnection.setRequestMethod(method);
 			for(Entry<String, String> entry: requestHeaders.entrySet()) {
-				System.out.println("HTTPCLIET: REQUEST HEADER ADDED: "+entry.getKey()+" : "+entry.getValue());
+//				System.out.println("HTTPCLIET: REQUEST HEADER ADDED: "+entry.getKey()+" : "+entry.getValue());
 				HTTPconnection.setRequestProperty(entry.getKey(), entry.getValue());
 			}
-			System.out.println("HTTPCLIENT: REQUEST BODY SENT: "+requestString);
+//			System.out.println("HTTPCLIENT: REQUEST BODY SENT: "+requestString);
 			HTTPconnection.setDoOutput(true);
 			HTTPconnection.setDoInput(true);
 			

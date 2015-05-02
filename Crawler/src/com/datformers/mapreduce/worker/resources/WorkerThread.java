@@ -83,6 +83,7 @@ public class WorkerThread implements  Runnable{
 		}
 		//change state and call it quits
 		out.close();
+		queue.clear();
 		System.out.println("Before writing to update completion: ");
 		parent.updateCompletion();
 

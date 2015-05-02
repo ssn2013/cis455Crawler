@@ -112,10 +112,12 @@ public class XPathCrawler {
 		String delim = ";;|;;";
 		URLQueue queue = URLQueue.getInstance(); // instance of the queue of
 		XPathCrawlerThread.visitedURL.clear();// URLs
+		queue.clear();
 		String keys[] = CRAWLERS;
 		OutgoingMap.createInstance(keys); // create a separate output set of
 											// URLs for each worker
 		// have to check if we have to resume operation or use seed urls
+		XPathCrawlerThread.visitedURL.clear();
 		if (STARTING_URLS != null) {
 			DBWrapper d=new DBWrapper();
 			d.truncateVisitedStore();

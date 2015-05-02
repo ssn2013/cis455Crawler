@@ -121,8 +121,8 @@ public class MasterServlet extends HttpServlet{
 		for(String key: crawlerStatusMap.keySet()) {
 			HttpClient client = new HttpClient();
 
-			System.out.println("SENDING: STOP CRAWL TO: "+"http://"+key+"/crawler/checkpoint"
-					+"\nPORT: "+ crawlerStatusMap.get(key).getPort());
+//			System.out.println("SENDING: STOP CRAWL TO: "+"http://"+key+"/crawler/checkpoint"
+//					+"\nPORT: "+ crawlerStatusMap.get(key).getPort());
 			client.makeGetRequest("http://"+key+"/crawler/checkpoint", crawlerStatusMap.get(key).getPort(), new HashMap<String, String>());
 		}
 		crawl_status = "checkpoint";
@@ -137,7 +137,7 @@ public class MasterServlet extends HttpServlet{
 			else if (crawlerStatusMap.get(key).getStatus().equals("queue_emptied"))
 				countOfEmptyQueueWorkers++;
 		}
-		System.out.println("CHECK FOR CHECKPOINTING: COUNT "+countOfDoneWorkers+" VALUE: "+(crawlerStatusMap.keySet().size()==countOfDoneWorkers));
+//		System.out.println("CHECK FOR CHECKPOINTING: COUNT "+countOfDoneWorkers+" VALUE: "+(crawlerStatusMap.keySet().size()==countOfDoneWorkers));
 		if((countOfDoneWorkers+countOfEmptyQueueWorkers) == crawlerStatusMap.keySet().size())
 			return true;
 		else 
@@ -148,9 +148,9 @@ public class MasterServlet extends HttpServlet{
 		//Make request to stop crawling
 		for(String key: crawlerStatusMap.keySet()) {
 			HttpClient client = new HttpClient();
-
-			System.out.println("SENDING: STOP CRAWL TO: "+"http://"+key+"/crawler/stopcrawl"
-					+"\nPORT: "+ crawlerStatusMap.get(key).getPort());
+//
+//			System.out.println("SENDING: STOP CRAWL TO: "+"http://"+key+"/crawler/stopcrawl"
+//					+"\nPORT: "+ crawlerStatusMap.get(key).getPort());
 			client.makeGetRequest("http://"+key+"/crawler/stopcrawl", crawlerStatusMap.get(key).getPort(), new HashMap<String, String>());
 		}
 		crawl_status = "idle";

@@ -259,6 +259,7 @@ public class XPathCrawler {
 
 	public static synchronized void addCounter() {
 		totalURLCount++;
+		System.out.println("Total URL count: "+totalURLCount+" count: "+count);
 		count++; // counter incremented by threads to keep track of files
 					// processed
 	}

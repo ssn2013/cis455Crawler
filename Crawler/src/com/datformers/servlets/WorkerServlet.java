@@ -68,6 +68,7 @@ public class WorkerServlet extends HttpServlet {
 //		System.out.println("this is stopping");
 //		wkt.stop();
 		wkt.interrupt();
+		System.out.println("DB dying cause of destroy method");
 		DBWrapper.close();
 		
 		for(Thread t: threadPool) {

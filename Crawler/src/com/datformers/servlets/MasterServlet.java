@@ -112,7 +112,7 @@ public class MasterServlet extends HttpServlet{
 			if(crawlerStatusMap.get(key).getStatus().equals("queue_emptied"))
 				emptied++;
 		}
-		if(sum==maxRequests || emptied==crawlerStatusMap.keySet().size())
+		if(sum>=maxRequests || emptied==crawlerStatusMap.keySet().size())
 			return true;
 		else
 			return false;

@@ -93,15 +93,15 @@ public class WorkerServlet extends HttpServlet {
 			throws java.io.IOException
 	{
 		if(request.getPathInfo().contains("stopcrawl")) {
-			System.out.println("WorkerServlet: StopCrawl");
+			//System.out.println("WorkerServlet: StopCrawl");
 			processStopCrawl(request, response); //redirect to method handling crawl stop
 			STATUS = "idle";
 		} else if (request.getPathInfo().contains("checkpoint")) {
-			System.out.println("WorkerServlet: Checkpointin");
+			//System.out.println("WorkerServlet: Checkpointin");
 			STATUS = "checkpointing";
 			processCreateCheckpoint(request, response); //redirect to method checkpointing
 		} else {
-			System.out.println("WorkerServlet: Normal GET request");
+			//System.out.println("WorkerServlet: Normal GET request");
 			response.setContentType("text/html");
 			PrintWriter out = response.getWriter();
 			out.println("<html><head><title>Worker</title></head>");
@@ -118,11 +118,11 @@ public class WorkerServlet extends HttpServlet {
 	public void doPost(HttpServletRequest request, HttpServletResponse response) {
 //		System.out.println("WorkerServlet:doPost GOT: "+request.getPathInfo());
 		if(request.getPathInfo().contains("startcrawl")) {
-			System.out.println("WorkerServlet: start crawling");
+			//System.out.println("WorkerServlet: start crawling");
 			STATUS = "crawling";
 			processRunCrawl(request, response); //redirect to method handling for crawl start	
 		} else if(request.getPathInfo().contains("pushdata")) {
-			System.out.println("WorkerServlet: Push data");
+			//System.out.println("WorkerServlet: Push data");
 			processPushData(request, response); //redirect to method handling pushdata calls
 		}
 	}
@@ -155,7 +155,7 @@ public class WorkerServlet extends HttpServlet {
 	private void processCreateCheckpoint(HttpServletRequest request,
 			HttpServletResponse response) {
 		//XPathCrawler.STOP_CRAWLER=true;
-		System.out.println("wanting to create checkpoint");
+		//System.out.println("wanting to create checkpoint");
 //		System.out.println("GOT REQUEST TO START CHECKPONITING: ");
 		if(OutgoingMap.getInstance()==null) {
 			System.out.println("Outgoing Map not existent");
@@ -175,7 +175,7 @@ public class WorkerServlet extends HttpServlet {
 	
 	private void processRunCrawl(HttpServletRequest request,
 			HttpServletResponse response) {
-		System.out.println("PROCESSING CRAWL REQUEST FROM MASTER");
+		//System.out.println("PROCESSING CRAWL REQUEST FROM MASTER");
 		try {
 			//save the WorkerServlet object in XPathCrawler
 			XPathCrawler.setWorkerServletOb(this);

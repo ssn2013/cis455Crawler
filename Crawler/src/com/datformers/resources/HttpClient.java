@@ -157,6 +157,7 @@ public class HttpClient {
 			}
 			responseStatusCode = HTTPconnection.getResponseCode();
 			addResponseHeaders("Content-Type", HTTPconnection.getContentType());
+			
 			if(getResponseHeader("Content-Length")==null)
 				addResponseHeaders("Content-Length", ""+HTTPconnection.getContentLength());
 			if(connectionInputStream==null) //Input stream having body
@@ -178,6 +179,7 @@ public class HttpClient {
 			bodyBuffer.append(bodyLine+'\n');
 		}
 		body = bodyBuffer.toString();
+		
 		bodyInputStream = new ByteArrayInputStream(body.getBytes()); //Create an InputStream of the body and return the same
 
 		//Setting as HTML or not based on content-type
@@ -227,13 +229,14 @@ public class HttpClient {
 			if(!isHTTPS) {
 //				System.out.println(url);
 				URL oracle = new URL(url);
-
+				
+				
 				HTTPconnection = (HttpURLConnection)oracle.openConnection();
 				//Write Headers
 				HTTPconnection.setRequestMethod(method);
 				for(Entry<String, String> entry: requestHeaders.entrySet()) {
 					if(entry.getKey().equalsIgnoreCase("if-modified-since")) {
-						setIfModifiedSince(entry.getValue());
+						//setIfModifiedSince(entry.getValue());
 						continue;
 					}
 					HTTPconnection.setRequestProperty(entry.getKey(), entry.getValue());
@@ -361,12 +364,12 @@ public class HttpClient {
 			}
 			parseResponse(); //Parsing the response, or fetched HTML/XML file
 		} catch (UnknownHostException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 		} catch (IOException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 		} finally {
 			if(bodyInputStream==null)
-				System.out.println("BODY INPUT STREAM: NULL");
+				//System.out.println("BODY INPUT STREAM: NULL");
 			if(socket!=null && !socket.isClosed())
 				try {
 					socket.close();

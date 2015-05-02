@@ -56,14 +56,14 @@ public class MasterServlet extends HttpServlet{
 				crawlerStatus.setStatus(status);
 				crawlerStatus.setTotalProcessed(totalProcessed);
 
-				System.out.println("\n\nIPAddres: "+crawlerStatus.getIpAddress()
-						+"\nPORT: "+crawlerStatus.getPort()
-						+"\nSTATUS: "+crawlerStatus.getStatus());
+				//System.out.println("\n\nIPAddres: "+crawlerStatus.getIpAddress()
+				//		+"\nPORT: "+crawlerStatus.getPort()
+				//		+"\nSTATUS: "+crawlerStatus.getStatus());
 
 				//add to map
 				crawlerStatusMap.put(crawlerStatus.getIpPortString(), crawlerStatus);
 				
-				System.out.println("MASTER STATUS: "+crawl_status);
+				//System.out.println("MASTER STATUS: "+crawl_status);
 				//Check if time for checkpointing
 				if(crawl_status.equals("crawling")&&checkForCheckpoiting())
 					callForCheckpoint();
@@ -81,6 +81,13 @@ public class MasterServlet extends HttpServlet{
 				StringBuffer htmlBuffer = new StringBuffer("<html><body>");
 				htmlBuffer.append("<form method=\"get\" action=\"master/startCrawling\"><input type=\"submit\" value=\"Start Crawling\"></form><br/>");
 				htmlBuffer.append("<form method=\"get\" action=\"master/stopCrawling\"><input type=\"submit\" value=\"Stop Crawling\"></form>");
+				int sum = 0;
+				for(String key: crawlerStatusMap.keySet()) {
+					System.out.println(crawlerStatusMap.get(key).getTotalProcessed());
+					sum+=crawlerStatusMap.get(key).getTotalProcessed();
+				}
+				htmlBuffer.append("<p>Total Requests Processed Till now="+sum+"</p>");
+				htmlBuffer.append("<p>Total Crawler nodes"+crawlerStatusMap.size()+"</p>");
 				htmlBuffer.append("</body></html>");
 				response.getWriter().println(htmlBuffer.toString());
 			}
@@ -112,6 +119,7 @@ public class MasterServlet extends HttpServlet{
 			if(crawlerStatusMap.get(key).getStatus().equals("queue_emptied"))
 				emptied++;
 		}
+		
 		if(sum>=maxRequests || emptied==crawlerStatusMap.keySet().size())
 			return true;
 		else

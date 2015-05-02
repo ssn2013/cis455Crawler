@@ -37,13 +37,13 @@ public class WorkerThread implements  Runnable{
 
 	@Override
 	public void run() {
-		System.out.println("Thread started running: "+Thread.currentThread().getName());
+		//System.out.println("Thread started running: "+Thread.currentThread().getName());
 		PrintWriter out=null;
 		URL hostUrl;
 		HttpClient client = new HttpClient();
 		File hostfile=new File(hostname);
 		if(hostfile.exists()) {
-			System.out.println("Trying to delte old file: "+hostfile.delete());
+			//System.out.println("Trying to delte old file: "+hostfile.delete());
 //			hostfile.delete();
 			hostfile=new File(hostname);
 		}
@@ -58,7 +58,7 @@ public class WorkerThread implements  Runnable{
 		}
 		
 		String urlToSend="";
-		System.out.println("PushDataThread:run: start");
+//		System.out.println("PushDataThread:run: start");
 		for(String url:queue) {
 
 			out.println(url);
@@ -67,24 +67,24 @@ public class WorkerThread implements  Runnable{
 			urlToSend+=url + "\n";
 			if(urlToSend.getBytes().length>(1.5*1024*1024)) {
 				//this packet will not be sent out!		
-				System.out.println("Byte count exceeded, making a call");
+				//System.out.println("Byte count exceeded, making a call");
 				String urlString = "http://"+hostname+"/worker/pushdata";
 				try {
-					System.out.println("URL: "+urlString+" Data being sent: "+urlToSend);
+					//System.out.println("URL: "+urlString+" Data being sent: "+urlToSend);
 					hostUrl = new URL(urlString);
 				} catch (MalformedURLException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				client.makePostRequest(urlString, Integer.parseInt(hostname.split(":")[1]), "text/plain", urlToSend);
-				System.out.println("PushDataThread:run: Made push requet to: "+hostname);
+//				/System.out.println("PushDataThread:run: Made push requet to: "+hostname);
 				urlToSend="";
 			}
 		}
 		//change state and call it quits
 		out.close();
 		queue.clear();
-		System.out.println("Before writing to update completion: ");
+		//System.out.println("Before writing to update completion: ");
 		parent.updateCompletion();
 
 	}
@@ -103,7 +103,7 @@ public class WorkerThread implements  Runnable{
 		String name="edu.upenn.cis455.mapreduce.job.DummyJob";
 		Class jobClass = Class.forName(name);
 		Job job = (Job)jobClass.newInstance();
-		System.out.println("GOT THIS FAR: ");
+		//System.out.println("GOT THIS FAR: ");
 
 		jobClass = ClassLoader.getSystemClassLoader().loadClass(name);
 		job = (Job) jobClass.newInstance();

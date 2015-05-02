@@ -121,6 +121,7 @@ public class XPathCrawlerThread implements Runnable{
 
 			synchronized (visitedURL) {
 				visitedURL.add(url);// adding to url processed set
+				
 				XPathCrawler.addCounter();
 			}
 			//System.out.println("before fetch from db");
@@ -135,21 +136,28 @@ public class XPathCrawlerThread implements Runnable{
 				format1.setTimeZone(gmtTime);
 				checkDate = format1.format(gotDoc.getLastAccessedDate());
 				resourceManagement.addRequestHeader("If-Modified-Since", checkDate);
+				
 			} else {
-//				System.out.println("DATA NOT FOUND IN DATABASE");
+				//System.out.println("DATA NOT FOUND IN DATABASE");
 			}
 			
 			//make head request  
 			resourceManagement.makeHeadRequest(url, 80, null);
-			System.out.println("HELLO URL: "+url+" STATUS: "+resourceManagement.getResponseStatusCode());
+			//System.out.println("HELLO URL: "+url+" STATUS: "+resourceManagement.getResponseStatusCode());
 			if (resourceManagement.getResponseStatusCode()==302) {
-				visitedURL.add(url);
-				String newUrl=resourceManagement.getResponseHeader("location");
+				
+				synchronized (visitedURL) {
+					visitedURL.add(url);	
+				}
+				
+				String newUrl=resourceManagement.getResponseHeader("Location");
+				if(newUrl!=null) {
 				if(!visitedURL.contains(newUrl)) {
 					VisitedURLStore  Doc=checkDB(newUrl);
 					if(Doc==null) {
 					visitedURL.add(newUrl);
 					}
+				}
 				}
 				return;
 				//TODO code to include redirect url in queue
@@ -162,6 +170,7 @@ public class XPathCrawlerThread implements Runnable{
 				String mimeType = resourceManagement.getResponseHeader("Content-Type");
 				boolean isAllowedType = false;
 				for(String allowedType: allowedMimeTypes) {
+					if(mimeType==null) continue;
 					if(mimeType.toLowerCase().contains(allowedType)) {
 						isAllowedType = true;
 						break;
@@ -185,23 +194,27 @@ public class XPathCrawlerThread implements Runnable{
 
 				//make get request
 				InputStream bodyStream = resourceManagement.makeGetRequest(url, 80, null);
-
+				
+				
 				if(resourceManagement.isHtml) {//Links are not extracted from files which are not HTML
-
+						
 					//parse File
 					try {
 						doc = parseDOM(bodyStream);
 					} catch (ParserConfigurationException | SAXException | IOException e) {
-						e.printStackTrace();
+						//e.printStackTrace();
 //						System.out.println("Parsing threw error: "+e.getMessage());
 					}
+					
 					//extract links
 					if(doc==null) {
+						
 //						System.out.println("Some issue occurred in parsing, document object is null");
 						return;
 					}
 					
 					ArrayList<String> extractedUrls = extractLinks(doc);
+					
 					URLQueue queue = URLQueue.getInstance(); //url queue
 
 					for(String str: extractedUrls) {
@@ -210,6 +223,8 @@ public class XPathCrawlerThread implements Runnable{
 				}
 
 			}else {
+				
+				
 				
 				//Get the Connected URLs from database and add to queue
 				if(gotDoc!=null) {
@@ -328,6 +343,7 @@ public class XPathCrawlerThread implements Runnable{
 		}
 		ArrayList<String> filteredUrls = new ArrayList<String>();
 		outgoingLinks=extractedUrls;
+		
 		synchronized (visitedURL) {
 			for(String url:extractedUrls) {
 				if(!visitedURL.contains(url)) {
@@ -499,6 +515,7 @@ public class XPathCrawlerThread implements Runnable{
 	 */
 	public Document parseDOM(InputStream is) throws ParserConfigurationException, SAXException, IOException {
 		Document document = null;
+		
 		if(resourceManagement.isHtml) { //html
 			Tidy tidy=new Tidy();
 			tidy.setXHTML(true);
@@ -507,7 +524,8 @@ public class XPathCrawlerThread implements Runnable{
 			tidy.setQuiet(true);
 			tidy.setShowErrors(0);
 			//tidy.setErrout(null);
-			document = tidy.parseDOM(is, null); //Jtidy used to parse HTML
+			try{document = tidy.parseDOM(is, null); }
+			catch(Exception e){}//Jtidy used to parse HTML
 		} else { //xml
 			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 			DocumentBuilder documentBuilder = dbf.newDocumentBuilder();

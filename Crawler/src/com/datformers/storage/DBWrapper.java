@@ -80,4 +80,8 @@ public class DBWrapper {
 		} 
 		System.out.println("\nSuccessful closing of everything, now exiting");
 	}
+	public void truncateVisitedStore() {
+		store.truncateClass(VisitedURLStore.class);
+		commit();
+	}
 }

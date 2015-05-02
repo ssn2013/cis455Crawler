@@ -89,6 +89,7 @@ public class XPathCrawler {
 			return false;
 		File[] files = f.listFiles();
 		String line;
+		if(files.length<1) return false;
 		for (File file : files) {
 			// check if file is the merged one!!
 			if (file.getAbsolutePath().contains("merged"))
@@ -106,23 +107,28 @@ public class XPathCrawler {
 		return true;
 	}
 
-	public void executeTask() {
+	public boolean executeTask() {
 		domainToRulesMapping = new HashMap<String, DomainRules>();
 		String delim = ";;|;;";
 		URLQueue queue = URLQueue.getInstance(); // instance of the queue of
-													// URLs
+		XPathCrawlerThread.visitedURL.clear();// URLs
 		String keys[] = CRAWLERS;
 		OutgoingMap.createInstance(keys); // create a separate output set of
 											// URLs for each worker
 		// have to check if we have to resume operation or use seed urls
 		if (STARTING_URLS != null) {
-
+			DBWrapper d=new DBWrapper();
+			d.truncateVisitedStore();
 			for (String url : STARTING_URLS) {
 				queue.add(url); // this crawler class just enqueues the first
 								// URL and the threads handle the rest
 			}
 		} else
-			getUrlFromFile();
+			if(!getUrlFromFile()) {
+				System.out.println("No more data to crawl");
+				return false;
+			}
+		return true;
 	}
 
 	public static void start(String args[], String urls[], String workers[]) {
@@ -147,8 +153,8 @@ public class XPathCrawler {
 														// documents to fetch
 			crawler = new XPathCrawlerFactory().getCrawler();
 
-			crawler.executeTask(); // start the crawler task
-
+			boolean shouldCrawl=crawler.executeTask(); // start the crawler task
+			if(shouldCrawl) {
 			for (int i = 0; i < NO_OF_THREADS; i++) { // create and executing
 														// threads
 				XPathCrawlerThread thread = new XPathCrawlerThread(crawler);
@@ -157,14 +163,16 @@ public class XPathCrawler {
 				crawler.addThread(t);
 				t.start();
 			}
-
 			crawler.checkForClose(); // crawler then checks for the condition in
-										// for which it would stop
+			} else {
+				WorkerServlet.STATUS = "queue_emptied";	
+			
+			}							// for which it would stop
 //			System.out.println("Store visited crawl data");
 			saveVisitedToDB();
 //			System.out.println("crawling ended");
 			DBWrapper.commit();
-			WorkerServlet.STATUS = "queue_emptied";
+			
 			ws.updateStatusToMaster();
 		} catch (Exception e) {
 			DBWrapper.close();

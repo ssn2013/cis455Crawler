@@ -302,7 +302,6 @@ public class HttpClient {
 	 * Unlike the previous method it does not return an InputStream of the body
 	 */
 	public void makeHeadRequest(String URL, int port, Map<String, String>  urlParams) {
-		System.out.println("HTTP URL GOT: "+URL);
 		Socket socket = null;
 		this.url = URL;
 
@@ -332,7 +331,6 @@ public class HttpClient {
 				this.url = buf.toString();
 			}
 			method = "HEAD";
-			System.out.println("URL BEING CHECKED: "+this.url+" HTTPS:? "+isHTTPS);
 			if(!isHTTPS) {
 				URL oracle = new URL(url);
 				HTTPconnection = (HttpURLConnection)oracle.openConnection();

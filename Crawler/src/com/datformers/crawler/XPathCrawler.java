@@ -167,7 +167,7 @@ public class XPathCrawler {
 			saveVisitedToDB();
 //			System.out.println("crawling ended");
 			DBWrapper.commit();
-			WorkerServlet.STATUS = "done";
+			WorkerServlet.STATUS = "queue_emptied";
 			ws.updateStatusToMaster();
 		} catch (Exception e) {
 			DBWrapper.close();

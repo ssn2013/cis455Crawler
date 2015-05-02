@@ -106,7 +106,12 @@ public class MasterServlet extends HttpServlet{
 		for(String key: crawlerStatusMap.keySet()) {
 			sum+=crawlerStatusMap.get(key).getTotalProcessed();
 		}
-		if(sum==maxRequests)
+		int emptied = 0;
+		for(String key: crawlerStatusMap.keySet()) {
+			if(crawlerStatusMap.get(key).getStatus().equals("queue_emptied"))
+				emptied++;
+		}
+		if(sum==maxRequests || emptied==crawlerStatusMap.keySet().size())
 			return true;
 		else
 			return false;
@@ -125,12 +130,15 @@ public class MasterServlet extends HttpServlet{
 
 	private boolean checkForCheckpoiting() {
 		int countOfDoneWorkers = 0;
+		int countOfEmptyQueueWorkers = 0;
 		for(String key: crawlerStatusMap.keySet()) {
 			if(crawlerStatusMap.get(key).getStatus().equals("done")) 
 				countOfDoneWorkers++;
+			else if (crawlerStatusMap.get(key).getStatus().equals("queue_emptied"))
+				countOfEmptyQueueWorkers++;
 		}
 		System.out.println("CHECK FOR CHECKPOINTING: COUNT "+countOfDoneWorkers+" VALUE: "+(crawlerStatusMap.keySet().size()==countOfDoneWorkers));
-		if(countOfDoneWorkers == crawlerStatusMap.keySet().size())
+		if((countOfDoneWorkers+countOfEmptyQueueWorkers) == crawlerStatusMap.keySet().size())
 			return true;
 		else 
 			return false;

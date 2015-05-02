@@ -14,7 +14,6 @@ import com.datformers.crawler.XPathCrawler;
  * Class implementing the HashMap of URLs
  */
 public class OutgoingMap {
-	//private HashMap<String,Set<String>> outgoingCrawlQueue= new HashMap<String,Set<String>>();
 	private List<Set<String>> outgoingCrawlQueue;
 	public BigInteger hashRange[];
 	private static OutgoingMap queue = null;
@@ -72,15 +71,7 @@ public class OutgoingMap {
 		
 		//notify();
 	}
-	/*
-	 * Method to dequeue URL
-	 */
-//	public synchronized String getUrl(String key) throws InterruptedException {
-//		while(urlQueue.isEmpty()) {
-//			wait();
-//		}
-//		return urlQueue.remove();
-//	}
+
 	/*
 	 * Method to determine if the queue is empty
 	 */

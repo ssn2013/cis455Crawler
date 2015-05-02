@@ -81,7 +81,7 @@ public class XPathCrawlerThread implements Runnable{
 				String url = queue.getUrl();
 				if(url==null) 
 					return;
-				//System.out.println(Thread.currentThread().getName()+" FETCHED URL FROM QUEUE: "+url);
+//				System.out.println(Thread.currentThread().getName()+" FETCHED URL FROM QUEUE: "+url);
 				this.domain = getDomain(url);
 				this.url = url;
 				if(parent.getRulesForDomain(domain)==null) //A url is unlikely to have domain specific rules if it's fetched the first time
@@ -92,7 +92,7 @@ public class XPathCrawlerThread implements Runnable{
 			}
 		} catch (InterruptedException e) {
 //			System.out.println("Crawler thread got interrupted :(");
-//				e.printStackTrace();
+//			e.printStackTrace();
 		}
 	}
 	/*
@@ -139,7 +139,7 @@ public class XPathCrawlerThread implements Runnable{
 
 			//make head request  
 			resourceManagement.makeHeadRequest(url, 80, null);
-//			System.out.println("HELLO URL: "+url+" STATUS: "+resourceManagement.getResponseStatusCode());
+			System.out.println("HELLO URL: "+url+" STATUS: "+resourceManagement.getResponseStatusCode());
 			if (resourceManagement.getResponseStatusCode()==302) {
 				visitedURL.add(url);
 				String newUrl=resourceManagement.getResponseHeader("location");
@@ -201,16 +201,8 @@ public class XPathCrawlerThread implements Runnable{
 					ArrayList<String> extractedUrls = extractLinks(doc);
 					URLQueue queue = URLQueue.getInstance(); //url queue
 
-					//TODO: save this URL to a list of URLs, use this for URL seen
-
 					for(String str: extractedUrls) {
-						//TODO: check if extracted URL belongs same crawler, if so add to queue
-						//TODO: else add to some other Set for checkpointing phase
-						//				System.out.println(Thread.currentThread().getName()+" Pushing to Queue: "+str);
-						//System.out.println("adding to queue");
-						//				System.out.println("Adding:"+str);
 						queue.add(str); //add extracted links
-
 					}
 				}
 

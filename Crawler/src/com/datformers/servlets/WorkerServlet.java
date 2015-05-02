@@ -235,16 +235,6 @@ public class WorkerServlet extends HttpServlet {
 		System.out.println("THREAD REPORTED COMPLETED: TOTAL COUNT: "+countOfCompletedThreads+" REQUIRED COUNT: "+otherWorkers.length+" reported by thread: "+Thread.currentThread().getName());
 		if(countOfCompletedThreads == otherWorkers.length) { //check count of threads against required number of threads to see if all threads finished
 			System.out.println("System completed");
-//			if(STATUS.equals("mapping")) { //on completions of map
-//				currentJob.isMapPhase = false;
-//				fileManagementObject.closeAllSpoolOut(); //close all references to spool out directory files
-//				new Thread(new PushDataThread(currentJob.getWorkerDetails(), this, fileManagementObject)).start(); //run push data on another thread
-//			} else if (STATUS.equals("reducing")) { //on completion of reduce
-//				STATUS = "idle"; //change status
-//				pastJob = currentJob; //past job keeps track of previous job (for keysWritten)
-//				fileManagementObject.closeReduceWriter();
-//				currentJob = null;
-//			}
 			STATUS="idle";
 			updateStatusToMaster();
 		}

@@ -117,7 +117,6 @@ public class XPathCrawler {
 		// have to check if we have to resume operation or use seed urls
 		if (STARTING_URLS != null) {
 
-			// String urls[]=STARTING_URLS.split(delim);
 			for (String url : STARTING_URLS) {
 				queue.add(url); // this crawler class just enqueues the first
 								// URL and the threads handle the rest
@@ -146,11 +145,9 @@ public class XPathCrawler {
 			if (args.length > 2)
 				MAX_PAGES = Integer.parseInt(args[2]); // limit on maximum
 														// documents to fetch
-			// DBWrapper.initialize(DB_DIRECTORY); //intialize DB environment
 			crawler = new XPathCrawlerFactory().getCrawler();
 
 			crawler.executeTask(); // start the crawler task
-			// crawler.closing();
 
 			for (int i = 0; i < NO_OF_THREADS; i++) { // create and executing
 														// threads
@@ -245,14 +242,6 @@ public class XPathCrawler {
 		return killTime;
 	}
 
-	// public void closing() {
-	// for(Thread t: subThreads)
-	// try {
-	// t.join();
-	// } catch (InterruptedException e) {
-	// e.printStackTrace();
-	// }
-	// }
 	public void addThread(Thread t) {
 		subThreads.add(t);
 	}
@@ -307,7 +296,6 @@ public class XPathCrawler {
 			// String string=convertToHex(sha1hash);
 			return convertToBigInt(sha1hash);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return null;

@@ -211,7 +211,7 @@ public class WorkerServlet extends HttpServlet {
 				otherWorkers[i]=crawlWorkers.getString(i).toString();
 			}
 			
-			
+			countOfCompletedThreads = 0;
 			CrawlerStartHelper myrunnable = new CrawlerStartHelper(args,seedUrl,otherWorkers);
 	     	new Thread(myrunnable).start();
 			
@@ -232,7 +232,7 @@ public class WorkerServlet extends HttpServlet {
 	 */
 	public synchronized void updateCompletion() {
 		countOfCompletedThreads++;
-		System.out.println("THREAD REPORTED COMPLETED: TOTAL COUNT: "+countOfCompletedThreads+" REQUIRED COUNT: "+otherWorkers.length+" get number of workers");
+		System.out.println("THREAD REPORTED COMPLETED: TOTAL COUNT: "+countOfCompletedThreads+" REQUIRED COUNT: "+otherWorkers.length+" reported by thread: "+Thread.currentThread().getName());
 		if(countOfCompletedThreads == otherWorkers.length) { //check count of threads against required number of threads to see if all threads finished
 			System.out.println("System completed");
 //			if(STATUS.equals("mapping")) { //on completions of map

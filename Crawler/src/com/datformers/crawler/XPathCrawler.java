@@ -232,7 +232,7 @@ public class XPathCrawler {
 		if (killTime = true) {
 			// kill All threads or else wait for them to complete
 			SYSTEM_SHUTDOWN = true; // state used by the threads to determine if
-									// they should stop running
+			WorkerServlet.STATUS = "done";			// they should stop running
 
 			for (Thread t : subThreads) {
 				if (t.getState() == Thread.State.WAITING)

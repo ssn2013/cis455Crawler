@@ -55,7 +55,7 @@ public class XPathCrawlerThread implements Runnable{
 	private boolean isHttps = false; 
 	private DBWrapper wrapper = null;
 	public XPathCrawlerThread(XPathCrawler parent) {
-		visitedURL.clear();
+		
 		this.parent = parent;
 		wrapper = new DBWrapper();
 	}
@@ -120,8 +120,10 @@ public class XPathCrawlerThread implements Runnable{
 				return;
 
 			synchronized (visitedURL) {
-				visitedURL.add(url);// adding to url processed set	
+				visitedURL.add(url);// adding to url processed set
+				XPathCrawler.addCounter(); //increase counter of files succesfully fetched and parsed
 			}
+			
 			//check if in DB, if so add last modified date
 			PrimaryIndex<BigInteger, ParsedDocument> indexDocuments = wrapper.getStore().getPrimaryIndex(BigInteger.class, ParsedDocument.class);
 			BigInteger hashUrl=SHA1(url);
@@ -252,7 +254,7 @@ public class XPathCrawlerThread implements Runnable{
 		document.setLastAccessedDate(new Date());
 		PrimaryIndex<BigInteger, ParsedDocument> indexDoc = wrapper.getStore().getPrimaryIndex(BigInteger.class, ParsedDocument.class);
 		indexDoc.put(document);		
-		XPathCrawler.addCounter(); //increase counter of files succesfully fetched and parsed
+		
 		if(!newResource) { //update next allowed access time for domain
 			DomainRules domainRules = parent.getRulesForDomain(getDomain(url));
 			domainRules.setNextAccessTime();
@@ -407,7 +409,7 @@ public class XPathCrawlerThread implements Runnable{
 		if(rulesForDomain==null)
 			return false;
 		ArrayList<String> disallowedLinks = null;
-		disallowedLinks = rulesForDomain.getRobotsTxtInfo().getDisallowedLinks("cis455crawler"); //Get rules for cis455crawler first
+		disallowedLinks = rulesForDomain.getRobotsTxtInfo().getDisallowedLinks("cis455Crawler"); //Get rules for cis455crawler first
 		if(disallowedLinks == null)
 			disallowedLinks = rulesForDomain.getRobotsTxtInfo().getDisallowedLinks("*"); //If matches to crawler can't be found, get rules for all
 		if(disallowedLinks==null|| disallowedLinks.size()==0) {
@@ -453,7 +455,7 @@ public class XPathCrawlerThread implements Runnable{
 		}
 		String robotsUrl = protocol+getDomain(url)+"/robots.txt";
 		HttpClient resourceManagement = new HttpClient();
-		resourceManagement.addRequestHeader("User-Agent", "cis455crawler");
+		resourceManagement.addRequestHeader("User-Agent", "cis455Crawler");
 		resourceManagement.addRequestHeader("Connection", "close");
 		resourceManagement.makeHeadRequest(robotsUrl, 80, null);
 		if(resourceManagement.getResponseStatusCode()!=200)

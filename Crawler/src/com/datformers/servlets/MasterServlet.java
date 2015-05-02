@@ -56,17 +56,18 @@ public class MasterServlet extends HttpServlet{
 				crawlerStatus.setStatus(status);
 				crawlerStatus.setTotalProcessed(totalProcessed);
 
-				System.out.println("IPAddres: "+crawlerStatus.getIpAddress()
+				System.out.println("\n\nIPAddres: "+crawlerStatus.getIpAddress()
 						+"\nPORT: "+crawlerStatus.getPort()
 						+"\nSTATUS: "+crawlerStatus.getStatus());
 
 				//add to map
 				crawlerStatusMap.put(crawlerStatus.getIpPortString(), crawlerStatus);
 				
+				System.out.println("MASTER STATUS: "+crawl_status);
 				//Check if time for checkpointing
 				if(crawl_status.equals("crawling")&&checkForCheckpoiting())
 					callForCheckpoint();
-				if(crawl_status.equals("crawling")&&checkForCompletion())
+				if(checkForCompletion())
 					stopCrawling();
 				if(crawl_status.equals("checkpoint")&&checkForCheckpoitingCompletion())
 					makeCrawlRequests(false);

@@ -79,7 +79,6 @@ public class XPathCrawler {
 	 * The task of the crawler
 	 */
 	public boolean getUrlFromFile() {
-		System.out.println("reading from feerer");
 		URLQueue queue = URLQueue.getInstance();
 		String spoolIn = STORE_DIRECTORY + "/spoolIn";
 		spoolIn = spoolIn.replace("//", "/");
@@ -127,7 +126,7 @@ public class XPathCrawler {
 			}
 		} else
 			if(!getUrlFromFile()) {
-				System.out.println("No more data to crawl");
+//				System.out.println("No more data to crawl");
 				return false;
 			}
 		return true;
@@ -178,6 +177,8 @@ public class XPathCrawler {
 			ws.updateStatusToMaster();
 		} catch (Exception e) {
 			DBWrapper.close();
+			System.out.pritln("Xpath crawler returned with error: "+e.getMessage());
+			e.printStackTrace();
 			throw e;
 		}
 	}

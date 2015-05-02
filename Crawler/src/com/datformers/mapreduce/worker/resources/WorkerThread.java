@@ -26,9 +26,9 @@ public class WorkerThread implements  Runnable{
 
 	public WorkerThread(ArrayList<String> queue, FileManagement fileManagement, WorkerServlet parent,String hostname) {
 		this.queue=queue;
-		for(String str: queue) {
-			System.out.println("Queue to save contains: "+str);
-		}
+//		for(String str: queue) {
+//			System.out.println("Queue to save contains: "+str);
+//		}
 		this.fileManagement = fileManagement;
 		this.parent = parent;
 		this.hostname=hostname;

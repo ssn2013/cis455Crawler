@@ -113,13 +113,7 @@ public class WorkerServlet extends HttpServlet {
 	@Override
 	public void doPost(HttpServletRequest request, HttpServletResponse response) {
 		System.out.println("WorkerServlet:doPost GOT: "+request.getPathInfo());
-		if(request.getPathInfo().contains("runmap")) {
-			STATUS = "mapping";
-			processRunMap(request, response); //redirect to method handing map calls
-		} else if(request.getPathInfo().contains("runreduce")) {
-			STATUS = "reducing";
-			processRunReduce(request, response); //redirect to method handling reduce calls
-		} else if(request.getPathInfo().contains("startcrawl")) {
+		if(request.getPathInfo().contains("startcrawl")) {
 			STATUS = "crawling";
 			processRunCrawl(request, response); //redirect to method handling for crawl start	
 		} else if(request.getPathInfo().contains("pushdata")) {
@@ -146,7 +140,7 @@ public class WorkerServlet extends HttpServlet {
 
 	private void processStopCrawl(HttpServletRequest request,
 			HttpServletResponse response) {
-		System.out.println("STOPPING DIE");
+		System.out.println("GOT REQUEST TO STOP CRAWLER");
 		STATUS = "idle";
 		XPathCrawler.STOP_CRAWLER=true;
 		
@@ -155,6 +149,8 @@ public class WorkerServlet extends HttpServlet {
 	private void processCreateCheckpoint(HttpServletRequest request,
 			HttpServletResponse response) {
 		//XPathCrawler.STOP_CRAWLER=true;
+		
+		System.out.println("GOT REQUEST TO START CHECKPONITING: ");
 		if(OutgoingMap.getInstance()==null) {
 			System.out.println("Outgoing Map not existent");
 			response.setStatus(500);
@@ -170,6 +166,7 @@ public class WorkerServlet extends HttpServlet {
 			
 		response.setStatus(200);
 	}
+	
 	private void processRunCrawl(HttpServletRequest request,
 			HttpServletResponse response) {
 		System.out.println("AND WE GOT CRAWL FROM MASTER");
@@ -194,7 +191,7 @@ public class WorkerServlet extends HttpServlet {
 					
 			//start the crawling
 			String args[]=new String[3];
-			if (url != null) {
+			if (url.length()>0) {
 				seedUrl = new String[url.length()];
 				for (int i = 0; i < url.length(); i++) {
 					// seedUrl[i] = url.getJSONObject(i).getString("host");
@@ -202,6 +199,8 @@ public class WorkerServlet extends HttpServlet {
 //					args[0]+= url.getString(i).toString()+delim;
 				}
 				//removing last occurrence of delim
+			} else {
+				seedUrl = null;
 			}
 			otherWorkers = new String [crawlWorkers.length()];
 			args[0]=storageDir;
@@ -229,87 +228,12 @@ public class WorkerServlet extends HttpServlet {
 	}
 
 	/*
-	 * Method to handle /runreduce calls
-	 */
-	private void processRunReduce(HttpServletRequest request,
-			HttpServletResponse response) {
-		String job = request.getParameter("job");
-		String output = request.getParameter("output");
-		int numThreads = Integer.parseInt(request.getParameter("numThreads"));
-		System.out.println("WorkerServlet:processRunReduce: Reduce request: \nJob: "+job+"\nInput: "+output+"\nNumThreads: "+numThreads);
-		if(currentJob.getJob().equals(job)) { //check if reduce is called for current job
-			currentJob.setNumReduceThreads(numThreads);
-			currentJob.setOutputDir(output);
-			fileManagementObject.setModeReduce(currentJob.getOutputDir());
-			countOfCompletedThreads = 0;
-			currentJob.resetKeys();
-			
-			//start threads
-			threadPool = new ArrayList<Thread>();
-//			for(int i=0; i<numThreads; i++) {
-//				WorkerThread wt  = new WorkerThread(job, fileManagementObject, this, false);
-//				Thread t = new Thread(wt);
-//				threadPool.add(t);
-//				t.start();
-//			}
-		}
-	}
-
-	/*
-	 * Method to handle /runmap calls
-	 */
-	private void processRunMap(HttpServletRequest request,
-			HttpServletResponse response) {
-		try {
-			String job = request.getParameter("job");
-			String input = request.getParameter("input");
-			int numThreads = Integer.parseInt(request.getParameter("numThreads"));
-			int numWorkers = Integer.parseInt(request.getParameter("numWorkers"));
-			String logline = "\nJOB: "+job+" INPUT: "+input+" NUM_THREADS: "+numThreads+" NUM_WORKERS: "+numWorkers;
-			JobDetails jobDetails = new JobDetails(job, input, numThreads, numWorkers);
-			for(int i=1; ; i++) {
-				String workerValue = request.getParameter("worker"+i);
-				if(workerValue==null)
-					break;
-				logline+=" WORKER: "+i+": "+workerValue;
-				jobDetails.addWorkerDetails(workerValue);
-			}
-			System.out.println("WorkerServlet:processRunMap: Got map request: "+logline);
-
-			startMapJob(jobDetails); //Method to handle map job 
-			response.setContentType("text/html");
-			response.getWriter().println("<html><p>OK</p></html>");
-		} catch (IOException e) {
-			System.out.println("EXCEPTION: WorkerServlet:processRunMap: "+e.getMessage());
-			e.printStackTrace();
-		}
-	}
-
-	/*
-	 * Method takes the given request parameters and starts map job on requested number of threads
-	 */
-	private void startMapJob(JobDetails jobDetails) {
-		//Create a resource management object
-		currentJob = jobDetails;
-		fileManagementObject = new FileManagement(storageDir, currentJob.getInputDir(), currentJob.getNumWorkers());
-
-		//Instantiate a threadpool and run thread
-		threadPool = new ArrayList<Thread>();
-		currentJob.resetKeys();
-//		for(int i=0; i<currentJob.getNumThreads(); i++) {
-//			WorkerThread worker = new WorkerThread(currentJob.getJob(),fileManagementObject,this, true);
-//			Thread t = new Thread(worker);
-//			threadPool.add(t);
-//			t.start();
-//		}
-	}
-
-	/*
 	 * Method called by threads on completion of task
 	 */
 	public synchronized void updateCompletion() {
 		countOfCompletedThreads++;
-		if(countOfCompletedThreads == currentJob.getNumThreads()) { //check count of threads against required number of threads to see if all threads finished
+		System.out.println("THREAD REPORTED COMPLETED: TOTAL COUNT: "+countOfCompletedThreads+" REQUIRED COUNT: "+otherWorkers.length+" get number of workers");
+		if(countOfCompletedThreads == otherWorkers.length) { //check count of threads against required number of threads to see if all threads finished
 			System.out.println("System completed");
 //			if(STATUS.equals("mapping")) { //on completions of map
 //				currentJob.isMapPhase = false;
@@ -481,21 +405,32 @@ class CheckPointThread implements Runnable {
 	public void run() {
 //		String spoolIn = ws.storageDir + "/spool_in";
 //		createDir(spoolIn);
+		System.out.println("RUN FOR CHECKPOINTING THREAD");
 		ws.fileManagementObject = new FileManagement(ws.storageDir, null, 0);
 		OutgoingMap map=OutgoingMap.getInstance();
 		URLQueue queue = URLQueue.getInstance();
 		ws.threadPool = new ArrayList<Thread>();
+		System.out.println("Threadpool created");
 		for(int i=0;i<ws.otherWorkers.length;i++) {
+			System.out.println("other work: "+ws.otherWorkers[i]);
 			if(i==0) {
-				if(queue.isEmpty()) continue;
-				WorkerThread worker = new WorkerThread(queue.getQueue(),ws.fileManagementObject,ws,ws.storageDir+"/"+ws.otherWorkers[i]);
+				if(queue.isEmpty()) {
+					System.out.println("the queue is empty");
+					ws.updateCompletion();
+					continue;
+				}
+				WorkerThread worker = new WorkerThread(queue.getQueue(),ws.fileManagementObject,ws,ws.storageDir+"/spoolIn/"+ws.otherWorkers[i]);
 				Thread t = new Thread(worker);
 				ws.threadPool.add(t);
 				t.start();
+				
 			}
 			else {
-				if(map.getQueueAtIndex(i).isEmpty()) continue;
-				WorkerThread worker = new WorkerThread(map.getQueueAtIndex(i),ws.fileManagementObject,ws,ws.storageDir+"/"+ws.otherWorkers[i]);
+				if(map.getQueueAtIndex(i).isEmpty()) {
+					ws.updateCompletion();
+					continue;
+				}
+				WorkerThread worker = new WorkerThread(map.getQueueAtIndex(i),ws.fileManagementObject,ws,ws.storageDir+"/spoolOut/"+ws.otherWorkers[i]);
 				Thread t = new Thread(worker);
 				ws.threadPool.add(t);
 				t.start();

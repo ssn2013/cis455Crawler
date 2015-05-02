@@ -47,7 +47,7 @@ public class MasterServlet extends HttpServlet{
 				int port = Integer.parseInt(request.getParameter("port").trim());
 				int totalProcessed  = Integer.parseInt(request.getParameter("totalURLCount").trim());
 				String status = request.getParameter("status");
-				System.out.println("port: "+port+" status: "+status+" ipaddress: "+ipAddress);
+				//System.out.println("port: "+port+" status: "+status+" ipaddress: "+ipAddress);
 				
 				//set crawler status
 				CrawlerStatus crawlerStatus = new CrawlerStatus();
@@ -56,9 +56,9 @@ public class MasterServlet extends HttpServlet{
 				crawlerStatus.setStatus(status);
 				crawlerStatus.setTotalProcessed(totalProcessed);
 
-//				System.out.println("IPAddres: "+crawlerStatus.getIpAddress()
-//						+"\nPORT: "+crawlerStatus.getPort()
-//						+"\nSTATUS: "+crawlerStatus.getStatus());
+				System.out.println("IPAddres: "+crawlerStatus.getIpAddress()
+						+"\nPORT: "+crawlerStatus.getPort()
+						+"\nSTATUS: "+crawlerStatus.getStatus());
 
 				//add to map
 				crawlerStatusMap.put(crawlerStatus.getIpPortString(), crawlerStatus);
@@ -90,19 +90,15 @@ public class MasterServlet extends HttpServlet{
 	}
 
 	private boolean checkForCheckpoitingCompletion() {
-		if(crawl_status.endsWith("crawling")) {
-			int count = 0;
-			for(String key: crawlerStatusMap.keySet()) {
-				if(crawlerStatusMap.get(key).getStatus().equals("idle"))
-					count++;
-			}
-			if(count==crawlerStatusMap.keySet().size())
-				return true;
-			else 
-				return false;
-		} else {
-			return false;
+		int count = 0;
+		for(String key: crawlerStatusMap.keySet()) {
+			if(crawlerStatusMap.get(key).getStatus().equals("idle"))
+				count++;
 		}
+		if(count==crawlerStatusMap.keySet().size())
+			return true;
+		else 
+			return false;
 	}
 
 	private boolean checkForCompletion() {
@@ -188,6 +184,8 @@ public class MasterServlet extends HttpServlet{
 				JSONObject requestObject = new JSONObject();
 				if(readFromFile)
 					requestObject.put("urls", new JSONArray(crawlerToUrlMap.get(key)));
+				else
+					requestObject.put("urls", new JSONArray());
 				requestObject.put("maxRequests", maxRequestsPerCrawler);
 				
 				//And here were are making life more complicated

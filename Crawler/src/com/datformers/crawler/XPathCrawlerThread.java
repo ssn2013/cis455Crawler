@@ -91,8 +91,8 @@ public class XPathCrawlerThread implements Runnable{
 				executeTask(); //task of the thread
 			}
 		} catch (InterruptedException e) {
-			System.out.println("Crawler thread got interrupted :(");
-			e.printStackTrace();
+//			System.out.println("Crawler thread got interrupted :(");
+//				e.printStackTrace();
 		}
 	}
 	/*
@@ -134,12 +134,12 @@ public class XPathCrawlerThread implements Runnable{
 				checkDate = format1.format(gotDoc.getLastAccessedDate());
 				resourceManagement.addRequestHeader("If-Modified-Since", checkDate);
 			} else {
-				System.out.println("DATA NOT FOUND IN DATABASE");
+//				System.out.println("DATA NOT FOUND IN DATABASE");
 			}
 
 			//make head request  
 			resourceManagement.makeHeadRequest(url, 80, null);
-			System.out.println("HELLO URL: "+url+" STATUS: "+resourceManagement.getResponseStatusCode());
+//			System.out.println("HELLO URL: "+url+" STATUS: "+resourceManagement.getResponseStatusCode());
 			if (resourceManagement.getResponseStatusCode()==302) {
 				visitedURL.add(url);
 				String newUrl=resourceManagement.getResponseHeader("location");
@@ -165,18 +165,18 @@ public class XPathCrawlerThread implements Runnable{
 					}
 				}
 				if(!isAllowedType) {
-					System.out.println("Not allowed type: "+mimeType);
+//					System.out.println("Not allowed type: "+mimeType);
 					return;
 				}
 
 				//maximimum size check
 				if(resourceManagement.getResponseHeader("Content-Length")==null ) {
-					System.out.println("Invalid or missing header for Content-length");
+//					System.out.println("Invalid or missing header for Content-length");
 					return;
 				}
 				int sizeOfFile = Integer.parseInt(resourceManagement.getResponseHeader("Content-Length"));
 				if(sizeOfFile>parent.MAX_SIZE) {
-					System.out.println("Above maximum allowed size: "+sizeOfFile);
+//					System.out.println("Above maximum allowed size: "+sizeOfFile);
 					return;
 				}
 
@@ -190,11 +190,11 @@ public class XPathCrawlerThread implements Runnable{
 						doc = parseDOM(bodyStream);
 					} catch (ParserConfigurationException | SAXException | IOException e) {
 						e.printStackTrace();
-						System.out.println("Parsing threw error: "+e.getMessage());
+//						System.out.println("Parsing threw error: "+e.getMessage());
 					}
 					//extract links
 					if(doc==null) {
-						System.out.println("Some issue occurred in parsing, document object is null");
+//						System.out.println("Some issue occurred in parsing, document object is null");
 						return;
 					}
 					
@@ -240,9 +240,9 @@ public class XPathCrawlerThread implements Runnable{
 				writeFileToDatabase();
 			}
 		} catch (Exception e) {
-			System.out.println("ERROR IN TASK: "+e.getMessage());
+//			System.out.println("ERROR IN TASK: "+e.getMessage());
 			e.printStackTrace();
-			System.out.println("Continuing with next task");
+//			System.out.println("Continuing with next task");
 			return;
 		}
 	}
@@ -419,11 +419,11 @@ public class XPathCrawlerThread implements Runnable{
 		if(disallowedLinks == null)
 			disallowedLinks = rulesForDomain.getRobotsTxtInfo().getDisallowedLinks("*"); //If matches to crawler can't be found, get rules for all
 		if(disallowedLinks==null|| disallowedLinks.size()==0) {
-			System.out.println("Coudn't get disallowed links for *");
+//			System.out.println("Coudn't get disallowed links for *");
 			return false;
 		}
 		if(disallowedLinks.get(0).equalsIgnoreCase("/")) {
-			System.out.println("All crawlers banned");
+//			System.out.println("All crawlers banned");
 			return false;
 		}
 		for(String str: disallowedLinks) {
@@ -431,7 +431,7 @@ public class XPathCrawlerThread implements Runnable{
 				break;
 			else {
 				if(url.contains(str)) {
-					System.out.println("Url matched disallowed pattern: "+str);
+//					System.out.println("Url matched disallowed pattern: "+str);
 					return false;
 				}
 			}

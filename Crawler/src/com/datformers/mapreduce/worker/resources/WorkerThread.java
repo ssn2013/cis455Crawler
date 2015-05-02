@@ -25,66 +25,79 @@ public class WorkerThread implements  Runnable{
 	private String hostname=null;
 
 	public WorkerThread(ArrayList<String> queue, FileManagement fileManagement, WorkerServlet parent,String hostname) {
+		this.queue=queue;
+		for(String str: queue) {
+			System.out.println("Queue to save contains: "+str);
+		}
 		this.fileManagement = fileManagement;
 		this.parent = parent;
 		this.hostname=hostname;
+		
 	}
 
 	@Override
 	public void run() {
+		System.out.println("Thread started running: "+Thread.currentThread().getName());
 		PrintWriter out=null;
 		URL hostUrl;
 		HttpClient client = new HttpClient();
-			File hostfile=new File(hostname);
-			if (hostfile.exists())
+		File hostfile=new File(hostname);
+		if(hostfile.exists()) {
+			System.out.println("Trying to delte old file: "+hostfile.delete());
+//			hostfile.delete();
+			hostfile=new File(hostname);
+		}
+		try {
+			hostfile.createNewFile();
+			out = new PrintWriter(new BufferedWriter(
+					new FileWriter(hostfile,
+							true)));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		String urlToSend="";
+		System.out.println("PushDataThread:run: start");
+		for(String url:queue) {
+
+			out.println(url);
+			//send the file to the crawler
+
+			urlToSend+=url + "\n";
+			if(urlToSend.getBytes().length>(1.5*1024*1024)) {
+				//this packet will not be sent out!		
+				System.out.println("Byte count exceeded, making a call");
+				String urlString = "http://"+hostname+"/worker/pushdata";
 				try {
-					hostfile.createNewFile();
-					out = new PrintWriter(new BufferedWriter(
-							new FileWriter(hostfile,
-									true)));
-				} catch (IOException e) {
+					System.out.println("URL: "+urlString+" Data being sent: "+urlToSend);
+					hostUrl = new URL(urlString);
+				} catch (MalformedURLException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-			String urlToSend="";
-			System.out.println("PushDataThread:run: start");
-			for(String url:queue) {
-
-				out.println(url + "\n");
-				//send the file to the crawler
-				
-				urlToSend+=url + "\n";
-				if(urlToSend.getBytes().length>(1.5*1024*1024)) {
-					//this packet will not be sent out!		
-						
-							String urlString = "http://"+hostname+"/worker/pushdata";
-							try {
-								hostUrl = new URL(urlString);
-							} catch (MalformedURLException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
-							client.makePostRequest(urlString, Integer.parseInt(hostname.split(":")[1]), "text/plain", urlToSend);
-							System.out.println("PushDataThread:run: Made push requet to: "+hostname);
-							urlToSend="";
-						}
-				}
-			//change state and call it quits
-			out.close();
-			parent.updateCompletion();
-		
+				client.makePostRequest(urlString, Integer.parseInt(hostname.split(":")[1]), "text/plain", urlToSend);
+				System.out.println("PushDataThread:run: Made push requet to: "+hostname);
+				urlToSend="";
 			}
-			
+		}
+		//change state and call it quits
+		out.close();
+		System.out.println("Before writing to update completion: ");
+		parent.updateCompletion();
+
+	}
+
 
 
 	/*
 	 * Write method called by job
 	 * @see edu.upenn.cis455.mapreduce.Context#write(java.lang.String, java.lang.String)
 	 */
-	
-/*
- * Main for testing purposes. Irrelevant here.
- */
+
+	/*
+	 * Main for testing purposes. Irrelevant here.
+	 */
 	public static void main(String args[]) throws Exception {
 		String name="edu.upenn.cis455.mapreduce.job.DummyJob";
 		Class jobClass = Class.forName(name);

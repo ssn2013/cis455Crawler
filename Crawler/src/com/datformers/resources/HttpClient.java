@@ -225,7 +225,7 @@ public class HttpClient {
 			}
 			method = "GET";
 			if(!isHTTPS) {
-				System.out.println(url);
+//				System.out.println(url);
 				URL oracle = new URL(url);
 
 				HTTPconnection = (HttpURLConnection)oracle.openConnection();

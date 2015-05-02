@@ -29,7 +29,7 @@ public class XPathCrawler {
 	public static String CRAWLERS[] = null;
 	public static int MAX_SIZE = -1;
 	private static int MAX_PAGES = -1;
-	private static int NO_OF_THREADS = 5;
+	private static int NO_OF_THREADS = 2;
 	public HashMap<String, DomainRules> domainToRulesMapping = null;
 	public static List<Thread> subThreads = new ArrayList<Thread>();
 	private static XPathCrawler crawler = null;
@@ -79,6 +79,7 @@ public class XPathCrawler {
 	 * The task of the crawler
 	 */
 	public boolean getUrlFromFile() {
+		System.out.println("reading from feerer");
 		URLQueue queue = URLQueue.getInstance();
 		String spoolIn = STORE_DIRECTORY + "/spoolIn";
 		spoolIn = spoolIn.replace("//", "/");
@@ -132,8 +133,8 @@ public class XPathCrawler {
 			STOP_CRAWLER = false;
 
 			if (args.length < 3) {
-				System.out
-						.println("3 Arguments: 1. Starting URL, 2. DB directory, 3. Maximum size required 4.Num Pages 5.Crawlers");
+//				System.out
+//						.println("3 Arguments: 1. Starting URL, 2. DB directory, 3. Maximum size required 4.Num Pages 5.Crawlers");
 				return;
 			}
 			STARTING_URLS = urls; // starting URL
@@ -155,16 +156,16 @@ public class XPathCrawler {
 														// threads
 				XPathCrawlerThread thread = new XPathCrawlerThread(crawler);
 				Thread t = new Thread(thread);
-				System.out.println("ADDING THREAD: " + t.getName());
+//				System.out.println("ADDING THREAD: " + t.getName());
 				crawler.addThread(t);
 				t.start();
 			}
 
 			crawler.checkForClose(); // crawler then checks for the condition in
 										// for which it would stop
-			System.out.println("Store visited crawl data");
+//			System.out.println("Store visited crawl data");
 			saveVisitedToDB();
-			System.out.println("crawling ended");
+//			System.out.println("crawling ended");
 			DBWrapper.commit();
 			WorkerServlet.STATUS = "done";
 			ws.updateStatusToMaster();

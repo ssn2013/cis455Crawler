@@ -23,8 +23,9 @@ public class WorkerThread implements  Runnable{
 	private WorkerServlet parent;
 	private ArrayList<String> queue = null;
 	private String hostname=null;
+	private String hostnameIp=null;
 
-	public WorkerThread(ArrayList<String> queue, FileManagement fileManagement, WorkerServlet parent,String hostname) {
+	public WorkerThread(ArrayList<String> queue, FileManagement fileManagement, WorkerServlet parent,String hostname, String hostnameIp) {
 		this.queue=queue;
 //		for(String str: queue) {
 //			System.out.println("Queue to save contains: "+str);
@@ -32,19 +33,19 @@ public class WorkerThread implements  Runnable{
 		this.fileManagement = fileManagement;
 		this.parent = parent;
 		this.hostname=hostname;
-		
+		this.hostnameIp=hostnameIp;
 	}
 
 	@Override
 	public void run() {
-		//System.out.println("Thread started running: "+Thread.currentThread().getName());
+		//System.out.println("Thread started running for writing to workers: "+Thread.currentThread().getName());
 		PrintWriter out=null;
 		URL hostUrl;
 		HttpClient client = new HttpClient();
 		File hostfile=new File(hostname);
 		if(hostfile.exists()) {
-			//System.out.println("Trying to delte old file: "+hostfile.delete());
-//			hostfile.delete();
+			//System.out.println("Trying to delete old file: "+hostfile.delete());
+			hostfile.delete();
 			hostfile=new File(hostname);
 		}
 		try {
@@ -53,22 +54,37 @@ public class WorkerThread implements  Runnable{
 					new FileWriter(hostfile,
 							true)));
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			System.out.println("Exception occurred in fetching file name");
 			e.printStackTrace();
 		}
 		
-		String urlToSend="";
-//		System.out.println("PushDataThread:run: start");
-		for(String url:queue) {
+		if(hostnameIp!=null) {
+			String urlToSend="";
+			for(String url:queue) {
 
-			out.println(url);
-			//send the file to the crawler
+				out.println(url);
+				//send the file to the crawler
 
-			urlToSend+=url + "\n";
-			if(urlToSend.getBytes().length>(1.5*1024*1024)) {
-				//this packet will not be sent out!		
-				//System.out.println("Byte count exceeded, making a call");
-				String urlString = "http://"+hostname+"/worker/pushdata";
+				urlToSend+=url + "\n";
+				if(urlToSend.getBytes().length>(1.5*1024*1024)) {
+					//this packet will not be sent out!		
+					//System.out.println("Byte count exceeded, making a call");
+					String urlString = "http://"+hostnameIp+"/crawler/pushdata";
+					try {
+						//System.out.println("URL: "+urlString+" Data being sent: "+urlToSend);
+						hostUrl = new URL(urlString);
+					} catch (MalformedURLException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					client.makePostRequest(urlString, Integer.parseInt(hostname.split(":")[1]), "text/plain", urlToSend);
+					//System.out.println("PushDataThread:run: Made push requet to: "+hostname);
+					urlToSend="";
+				}
+			}
+			if(urlToSend.length()>0) {
+				//System.out.println("Last chance to send");
+				String urlString = "http://"+hostnameIp+"/crawler/pushdata";
 				try {
 					//System.out.println("URL: "+urlString+" Data being sent: "+urlToSend);
 					hostUrl = new URL(urlString);
@@ -77,7 +93,7 @@ public class WorkerThread implements  Runnable{
 					e.printStackTrace();
 				}
 				client.makePostRequest(urlString, Integer.parseInt(hostname.split(":")[1]), "text/plain", urlToSend);
-				System.out.println("PushDataThread:run: Made push requet to: "+hostname);
+				//System.out.println("PushDataThread:run: Made push requet to: "+hostname);
 				urlToSend="";
 			}
 		}

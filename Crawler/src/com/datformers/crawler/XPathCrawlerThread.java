@@ -143,6 +143,7 @@ public class XPathCrawlerThread implements Runnable{
 			//make head request  
 			resourceManagement.makeHeadRequest(url, 80, null);
 			
+			//System.out.println("CRAWLER: Requested url: "+url+" Response: "+resourceManagement.getResponseStatusCode()+" count: "+XPathCrawler.count);
 			if (resourceManagement.getResponseStatusCode() == 302
 					|| resourceManagement.getResponseStatusCode() == 301) {
 

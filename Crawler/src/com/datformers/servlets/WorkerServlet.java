@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.print.attribute.standard.MediaSize.Other;
 import javax.servlet.*;
 import javax.servlet.http.*;
 
@@ -446,7 +447,7 @@ class CheckPointThread implements Runnable {
 					continue;
 				}
 				
-				WorkerThread worker = new WorkerThread(queue.getQueue(),ws.fileManagementObject,ws,ws.storageDir+"/spoolIn/"+ws.otherWorkers[i]);
+				WorkerThread worker = new WorkerThread(queue.getQueue(),ws.fileManagementObject,ws,ws.storageDir+"/spoolIn/"+ws.otherWorkers[i], null);
 				Thread t = new Thread(worker);
 				ws.threadPool.add(t);
 				t.start();
@@ -457,7 +458,7 @@ class CheckPointThread implements Runnable {
 					ws.updateCompletion();
 					continue;
 				}
-				WorkerThread worker = new WorkerThread(map.getQueueAtIndex(i),ws.fileManagementObject,ws,ws.storageDir+"/spoolOut/"+ws.otherWorkers[i]);
+				WorkerThread worker = new WorkerThread(map.getQueueAtIndex(i),ws.fileManagementObject,ws,ws.storageDir+"/spoolOut/"+ws.otherWorkers[i], ws.otherWorkers[i]);
 				Thread t = new Thread(worker);
 				ws.threadPool.add(t);
 				t.start();

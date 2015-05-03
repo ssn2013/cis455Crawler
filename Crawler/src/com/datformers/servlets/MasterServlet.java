@@ -38,6 +38,7 @@ public class MasterServlet extends HttpServlet{
 	private int maxRequests;
 	public BigInteger hashRange[];
 	public String workers[];
+	private String crawlerFilePath="/mnt/crawlers";
 	private String crawl_status ="idle";
 	public void init(ServletConfig servletConfig) throws javax.servlet.ServletException {
 		super.init(servletConfig);
@@ -80,11 +81,15 @@ public class MasterServlet extends HttpServlet{
 				if(checkForCompletion())
 					stopCrawling();
 				if(crawl_status.equals("checkpoint")&&checkForCheckpoitingCompletion())
-					makeCrawlRequests(false);
+					makeCrawlRequests(true);
 			} else if(request.getPathInfo()!=null&&request.getPathInfo().contains("startCrawling")) {
-				doHashDiv();
+				doHashDiv(false);
 				//Make crawl requests to all crawlers
 				makeCrawlRequests(true);
+			} else if(request.getPathInfo()!=null&&request.getPathInfo().contains("resumeCrawling")) {
+				doHashDiv(true);
+				//Make crawl requests to all crawlers
+				makeCrawlRequests(false);
 			} else if(request.getPathInfo()!=null&&request.getPathInfo().contains("stopCrawling")) {
 				//Stop all crawling();
 				stopCrawling();
@@ -92,6 +97,7 @@ public class MasterServlet extends HttpServlet{
 				StringBuffer htmlBuffer = new StringBuffer("<html><body>");
 				htmlBuffer.append("<form method=\"get\" action=\"master/startCrawling\"><input type=\"submit\" value=\"Start Crawling\"></form><br/>");
 				htmlBuffer.append("<form method=\"get\" action=\"master/stopCrawling\"><input type=\"submit\" value=\"Stop Crawling\"></form>");
+				htmlBuffer.append("<form method=\"get\" action=\"master/resumeCrawling\"><input type=\"submit\" value=\"Resume Crawling\"></form>");
 				int sum = 0;
 				for(String key: crawlerStatusMap.keySet()) {
 					
@@ -177,9 +183,30 @@ public class MasterServlet extends HttpServlet{
 		crawl_status = "idle";
 	}
 
-	public void doHashDiv() {
-		if(hashRange!=null) return; 
-		File f=new File("/mnt/crawlers");
+	public void createCrawlerFiles() {
+		File f=new File(crawlerFilePath);
+		workers=crawlerStatusMap.keySet().toArray(new String[crawlerStatusMap.keySet().size()]);
+		try {
+			f.createNewFile();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		PrintWriter out = null;
+		try {
+			out = new PrintWriter(new BufferedWriter(
+					new FileWriter(f,true)));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		for(int i=0;i<workers.length;i++) {
+			out.println(workers[i]);
+		}
+		out.close();
+	}
+	public void readCrawlerFiles() {
+		File f=new File(crawlerFilePath);
 		if(f.exists()) {
 			String line;String craw="";
 			try (BufferedReader br = new BufferedReader(new FileReader(f))) {
@@ -195,27 +222,16 @@ public class MasterServlet extends HttpServlet{
 			}
 		}
 		else {
-			workers=crawlerStatusMap.keySet().toArray(new String[crawlerStatusMap.keySet().size()]);
-			try {
-				f.createNewFile();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			PrintWriter out = null;
-			try {
-				out = new PrintWriter(new BufferedWriter(
-						new FileWriter(f,true)));
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			for(int i=0;i<workers.length;i++) {
-				out.println(workers[i]);
-			}
-			out.close();
+			System.out.println("Crawlers file does not exists!!");
 		}
-		hashRange=new BigInteger[crawlerStatusMap.keySet().size()];
+	}
+	public void doHashDiv(boolean readFromFile) {
+		 
+		if(!readFromFile) createCrawlerFiles();
+		else readCrawlerFiles();
+		
+		if(hashRange!=null) return;
+				hashRange=new BigInteger[crawlerStatusMap.keySet().size()];
 		BigInteger range = new BigInteger(
 				"ffffffffffffffffffffffffffffffffffffffff", 16)
 				.divide(new BigInteger("" + workers.length));

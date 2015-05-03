@@ -8,6 +8,7 @@ import java.util.Map;
 
 import javax.servlet.*;
 import javax.servlet.http.*;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -117,7 +118,7 @@ public class WorkerServlet extends HttpServlet {
 	 */
 	@Override
 	public void doPost(HttpServletRequest request, HttpServletResponse response) {
-//		System.out.println("WorkerServlet:doPost GOT: "+request.getPathInfo());
+		System.out.println("WorkerServlet:doPost GOT: "+request.getPathInfo());
 		if(request.getPathInfo().contains("startcrawl")) {
 			//System.out.println("WorkerServlet: start crawling");
 			STATUS = "crawling";
@@ -221,7 +222,7 @@ public class WorkerServlet extends HttpServlet {
 				// workers[i] = crawlWorkers.getJSONObject(i).getString("host");
 				otherWorkers[i]=crawlWorkers.getString(i).toString();
 			}
-			
+			writeCrawlersToFile(otherWorkers);
 			countOfCompletedThreads = 0;
 			CrawlerStartHelper myrunnable = new CrawlerStartHelper(args,seedUrl,otherWorkers,selfAddress);
 	     	new Thread(myrunnable).start();
@@ -237,7 +238,29 @@ public class WorkerServlet extends HttpServlet {
 		}
 
 	}
-
+	public void writeCrawlersToFile(String []otherWorkers) {
+		File f=new File(storageDir+"crawlers");
+		try {
+			if(f.exists()) f.delete();
+			
+			f.createNewFile();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		PrintWriter out = null;
+		try {
+			out = new PrintWriter(new BufferedWriter(
+					new FileWriter(f,true)));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		for(int i=0;i<otherWorkers.length;i++) {
+			out.println(otherWorkers[i]);
+		}
+		out.close();
+	}
 	/*
 	 * Method called by threads on completion of task
 	 */

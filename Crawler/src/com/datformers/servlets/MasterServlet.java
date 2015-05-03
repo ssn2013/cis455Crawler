@@ -5,11 +5,16 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.http.HttpServlet;
@@ -28,6 +33,8 @@ public class MasterServlet extends HttpServlet{
 	private String seedFileName;
 	private int maxRequestsPerCrawler;
 	private int maxRequests;
+	public BigInteger hashRange[];
+	public String workers[];
 	private String crawl_status ="idle";
 	public void init(ServletConfig servletConfig) throws javax.servlet.ServletException {
 		super.init(servletConfig);
@@ -56,9 +63,9 @@ public class MasterServlet extends HttpServlet{
 				crawlerStatus.setStatus(status);
 				crawlerStatus.setTotalProcessed(totalProcessed);
 
-				//System.out.println("\n\nIPAddres: "+crawlerStatus.getIpAddress()
-				//		+"\nPORT: "+crawlerStatus.getPort()
-				//		+"\nSTATUS: "+crawlerStatus.getStatus());
+				System.out.println("\n\nIPAddres: "+crawlerStatus.getIpAddress()
+						+"\nPORT: "+crawlerStatus.getPort()
+						+"\nSTATUS: "+crawlerStatus.getStatus());
 
 				//add to map
 				crawlerStatusMap.put(crawlerStatus.getIpPortString(), crawlerStatus);
@@ -72,6 +79,7 @@ public class MasterServlet extends HttpServlet{
 				if(crawl_status.equals("checkpoint")&&checkForCheckpoitingCompletion())
 					makeCrawlRequests(false);
 			} else if(request.getPathInfo()!=null&&request.getPathInfo().contains("startCrawling")) {
+				doHashDiv();
 				//Make crawl requests to all crawlers
 				makeCrawlRequests(true);
 			} else if(request.getPathInfo()!=null&&request.getPathInfo().contains("stopCrawling")) {
@@ -83,9 +91,10 @@ public class MasterServlet extends HttpServlet{
 				htmlBuffer.append("<form method=\"get\" action=\"master/stopCrawling\"><input type=\"submit\" value=\"Stop Crawling\"></form>");
 				int sum = 0;
 				for(String key: crawlerStatusMap.keySet()) {
-					System.out.println(crawlerStatusMap.get(key).getTotalProcessed());
+					
 					sum+=crawlerStatusMap.get(key).getTotalProcessed();
 				}
+				
 				htmlBuffer.append("<p>Total Requests Processed Till now="+sum+"</p>");
 				htmlBuffer.append("<p>Total Crawler nodes"+crawlerStatusMap.size()+"</p>");
 				htmlBuffer.append("</body></html>");
@@ -129,7 +138,7 @@ public class MasterServlet extends HttpServlet{
 	private void callForCheckpoint() {
 		for(String key: crawlerStatusMap.keySet()) {
 			HttpClient client = new HttpClient();
-
+			System.out.println("starting checkpoinint!!");
 //			System.out.println("SENDING: STOP CRAWL TO: "+"http://"+key+"/crawler/checkpoint"
 //					+"\nPORT: "+ crawlerStatusMap.get(key).getPort());
 			client.makeGetRequest("http://"+key+"/crawler/checkpoint", crawlerStatusMap.get(key).getPort(), new HashMap<String, String>());
@@ -165,11 +174,79 @@ public class MasterServlet extends HttpServlet{
 		crawl_status = "idle";
 	}
 
+	public void doHashDiv() {
+		if(hashRange!=null) return; 
+		workers=crawlerStatusMap.keySet().toArray(new String[crawlerStatusMap.keySet().size()]);
+		hashRange=new BigInteger[crawlerStatusMap.keySet().size()];
+		BigInteger range = new BigInteger(
+				"ffffffffffffffffffffffffffffffffffffffff", 16)
+				.divide(new BigInteger("" + workers.length));
+		hashRange[0] = range;
+		for (int i = 1; i < workers.length; i++) {
+
+			BigInteger temp = new BigInteger("" + hashRange[i - 1]).add(range);
+
+			hashRange[i] = temp;
+
+		}
+
+	}
+	public static BigInteger convertToBigInt(byte[] data) {
+		StringBuffer buf = new StringBuffer();
+		for (int i = 0; i < data.length; i++) {
+			int halfbyte = (data[i] >>> 4) & 0x0F;
+			int two_halfs = 0;
+			do {
+				if ((0 <= halfbyte) && (halfbyte <= 9))
+					buf.append((char) ('0' + halfbyte));
+				else
+					buf.append((char) ('a' + (halfbyte - 10)));
+				halfbyte = data[i] & 0x0F;
+			} while (two_halfs++ < 1);
+		}
+		return new BigInteger(buf.toString(), 16);
+	}
+
+	/*
+	 * 
+	 * This function is used to calculate the SHA1 hash
+	 */
+	public static BigInteger SHA1(String text) {
+		try {
+			MessageDigest md;
+			md = MessageDigest.getInstance("SHA-1");
+
+			byte[] sha1hash = new byte[40];
+			md.update(text.getBytes("iso-8859-1"), 0, text.length());
+			sha1hash = md.digest();
+			// String string=convertToHex(sha1hash);
+			return convertToBigInt(sha1hash);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+		// return new BigInteger(sha1hash);
+	}
+
+	public int findIndex(String key) {
+		BigInteger b = null;
+		b = SHA1(key);
+		//System.out.println("key:"+key+"="+b);
+		int index = 0;
+		for (int i = 0; i < hashRange.length; i++) {
+			if (b.compareTo(hashRange[i]) <= 0) {
+				index = i;
+				break;
+			}
+		}
+		return index;
+	}
+	
 	private void makeCrawlRequests(boolean readFromFile) {
 		//Read seed URLs
 		FileReader fileReader;
 		try {
-			Map<String, String[]> crawlerToUrlMap = new HashMap<String, String[]>();
+			Map<String, ArrayList<String>> crawlerToUrlMap = new HashMap<String, ArrayList<String>>();
 			if(readFromFile) {
 				fileReader = new FileReader(new File(seedFileName));
 				BufferedReader br = new BufferedReader(fileReader);
@@ -181,17 +258,22 @@ public class MasterServlet extends HttpServlet{
 
 				//Divide URLS among crawlers
 				//TODO: implement URL hashing
-				int urlsPerCrawlerCount = seedUrls.size()/crawlerStatusMap.keySet().size();
-				int ind = 0;
+				//int urlsPerCrawlerCount = seedUrls.size()/crawlerStatusMap.keySet().size();
+				//int ind = 0;String last;
 				for(String key: crawlerStatusMap.keySet()) {
-					String urls[] = new String[urlsPerCrawlerCount];
-					for(int i = 0; i<urlsPerCrawlerCount; i++) {
-						urls[i] = seedUrls.get(ind++);
-					}
+					ArrayList<String> urls = new ArrayList<String>();
 					crawlerToUrlMap.put(key, urls);
 				}
-			} 
-
+				
+				String[] crawlers = workers;
+				
+				for(String url:seedUrls) {
+					int index=findIndex(url);
+					
+					crawlerToUrlMap.get(crawlers[index]).add(url);
+					
+				}
+			}		
 			//Form Json object for the request
 			JSONArray crawlerList = new JSONArray(crawlerStatusMap.keySet().toArray(new String[crawlerStatusMap.keySet().size()]));			
 
@@ -200,7 +282,7 @@ public class MasterServlet extends HttpServlet{
 				HttpClient client = new HttpClient();
 				JSONObject requestObject = new JSONObject();
 				if(readFromFile)
-					requestObject.put("urls", new JSONArray(crawlerToUrlMap.get(key)));
+					requestObject.put("urls", new JSONArray(crawlerToUrlMap.get(key).toArray()));
 				else
 					requestObject.put("urls", new JSONArray());
 				requestObject.put("maxRequests", maxRequestsPerCrawler);
@@ -224,6 +306,7 @@ public class MasterServlet extends HttpServlet{
 				client.makePostRequest("http://"+key+"/crawler/startcrawl", crawlerStatusMap.get(key).getPort(), "application/json", requestObject.toString());
 			}
 			crawl_status = "crawling";
+			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {

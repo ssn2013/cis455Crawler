@@ -105,20 +105,19 @@ public class XPathCrawlerThread implements Runnable{
 			resourceManagement = new HttpClient(); 
 			resourceManagement.addRequestHeader("User-Agent", "cis455Crawler"); //User-agent header for requests
 			//resourceManagement.addRequestHeader("Connection", "close"); //Connection close header to make the communications quick
-
+			
 			if(newResource) {  //For a new URL, fetch and parse robots.txt
 				if(parent.getRulesForDomain(getDomain(url))==null) {
 					RobotsTxtInfo r = fetchAndParseRobots();
-					if(r==null)
-						return;
-					else
+					if(r!=null)
 						parent.setRobotsTxtInfo(getDomain(url), r); //add parsed robots.txt to domain specific rules
 				}
 			}
+			
 			//validate crawling with robots.txt rules
 			if(!isCrawlingAllowed(parent.getRulesForDomain(getDomain(url))))
 				return;
-
+			
 			synchronized (visitedURL) {
 				visitedURL.add(url);// adding to url processed set
 				
@@ -143,23 +142,25 @@ public class XPathCrawlerThread implements Runnable{
 			
 			//make head request  
 			resourceManagement.makeHeadRequest(url, 80, null);
-			//System.out.println("HELLO URL: "+url+" STATUS: "+resourceManagement.getResponseStatusCode());
-			if (resourceManagement.getResponseStatusCode()==302) {
-				
+			
+			if (resourceManagement.getResponseStatusCode() == 302
+					|| resourceManagement.getResponseStatusCode() == 301) {
+
 				synchronized (visitedURL) {
-					visitedURL.add(url);	
+					visitedURL.add(url);
 				}
-				
-				String newUrl=resourceManagement.getResponseHeader("Location");
-				if(newUrl!=null) {
-				if(!visitedURL.contains(newUrl)) {
-					VisitedURLStore  Doc=checkDB(newUrl);
-					if(Doc==null) {
-					visitedURL.add(newUrl);
+
+				String newUrl = resourceManagement
+						.getResponseHeader("Location");
+				if (newUrl != null) {
+					if (!visitedURL.contains(newUrl)) {
+						VisitedURLStore Doc = checkDB(newUrl);
+						if (Doc == null) {
+							visitedURL.add(newUrl);
+						}
 					}
 				}
-				}
-				return;
+	return;
 				//TODO code to include redirect url in queue
 			}
 			else if(!(resourceManagement.getResponseStatusCode()==304)) //Checking unmodified date
@@ -270,7 +271,10 @@ public class XPathCrawlerThread implements Runnable{
 		document.setDocumentContents(resourceManagement.getBody());
 		document.setLastAccessedDate(new Date());
 		PrimaryIndex<BigInteger, ParsedDocument> indexDoc = wrapper.getStore().getPrimaryIndex(BigInteger.class, ParsedDocument.class);
-		indexDoc.put(document);		
+		synchronized (indexDoc) {
+			indexDoc.put(document);	
+		}
+				
 		
 		if(!newResource) { //update next allowed access time for domain
 			DomainRules domainRules = parent.getRulesForDomain(getDomain(url));
@@ -425,17 +429,39 @@ public class XPathCrawlerThread implements Runnable{
 	 */
 	private boolean isCrawlingAllowed(DomainRules rulesForDomain) {
 		if(rulesForDomain==null)
-			return false;
+			return true;
+		//Testing time
+				if(!newResource) { //for an already encoutered domain
+					Date date = new Date();
+					Date then = rulesForDomain.getNextAccessTime(); //get last accessed time
+					if(date.before(then)) {
+						URLQueue instance  = URLQueue.getInstance();
+						instance.add(url); //Add URL back to queue, Time limits on the domain not expired
+						return false;
+					}
+				}
+				
+		
 		ArrayList<String> disallowedLinks = null;
 		disallowedLinks = rulesForDomain.getRobotsTxtInfo().getDisallowedLinks("cis455Crawler"); //Get rules for cis455crawler first
 		if(disallowedLinks == null)
 			disallowedLinks = rulesForDomain.getRobotsTxtInfo().getDisallowedLinks("*"); //If matches to crawler can't be found, get rules for all
 		if(disallowedLinks==null|| disallowedLinks.size()==0) {
+			synchronized (visitedURL) {
+				visitedURL.add(url);// adding to url processed set
+				
+				XPathCrawler.addCounter();
+			}
 //			System.out.println("Coudn't get disallowed links for *");
 			return false;
 		}
 		if(disallowedLinks.get(0).equalsIgnoreCase("/")) {
 //			System.out.println("All crawlers banned");
+			synchronized (visitedURL) {
+				visitedURL.add(url);// adding to url processed set
+				
+				XPathCrawler.addCounter();
+			}
 			return false;
 		}
 		for(String str: disallowedLinks) {
@@ -444,21 +470,17 @@ public class XPathCrawlerThread implements Runnable{
 			else {
 				if(url.contains(str)) {
 //					System.out.println("Url matched disallowed pattern: "+str);
+					synchronized (visitedURL) {
+						visitedURL.add(url);// adding to url processed set
+						
+						XPathCrawler.addCounter();
+					}
 					return false;
 				}
 			}
 		}
 
-		//Testing time
-		if(!newResource) { //for an already encoutered domain
-			Date date = new Date();
-			Date then = rulesForDomain.getNextAccessTime(); //get last accessed time
-			if(date.before(then)) {
-				URLQueue instance  = URLQueue.getInstance();
-				instance.add(url); //Add URL back to queue, Time limits on the domain not expired
-				return false;
-			}
-		}
+		
 		return true;
 	}
 	/*
@@ -476,7 +498,24 @@ public class XPathCrawlerThread implements Runnable{
 		resourceManagement.addRequestHeader("User-Agent", "cis455Crawler");
 		resourceManagement.addRequestHeader("Connection", "close");
 		resourceManagement.makeHeadRequest(robotsUrl, 80, null);
-		if(resourceManagement.getResponseStatusCode()!=200)
+		if (resourceManagement.getResponseStatusCode() == 302
+				|| resourceManagement.getResponseStatusCode() == 301) {
+
+			synchronized (visitedURL) {
+				visitedURL.add(url);
+			}
+			String newUrl = resourceManagement
+					.getResponseHeader("Location");
+			if (newUrl != null) {
+				if (!visitedURL.contains(newUrl)) {
+					VisitedURLStore Doc = checkDB(newUrl);
+					if (Doc == null) {
+						visitedURL.add(newUrl);
+					}
+				}
+			}
+		}
+		else if(resourceManagement.getResponseStatusCode()!=200)
 			return null;
 		RobotsTxtInfo robotsTxtInfo = new RobotsTxtInfo();
 		InputStream robotsStream = resourceManagement.makeGetRequest(robotsUrl, 80, null);
@@ -508,6 +547,7 @@ public class XPathCrawlerThread implements Runnable{
 			e.printStackTrace();
 			return null;
 		}
+		
 		return robotsTxtInfo;
 	}
 	/*

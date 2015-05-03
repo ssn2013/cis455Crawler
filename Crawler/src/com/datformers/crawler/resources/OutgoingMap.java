@@ -21,6 +21,9 @@ public class OutgoingMap {
 	private OutgoingMap() {
 
 	}
+	public int size() {
+		return outgoingCrawlQueue.size();
+	}
 	public void doHashDiv(String []workers) {
 		BigInteger range = new BigInteger(
 				"ffffffffffffffffffffffffffffffffffffffff", 16)

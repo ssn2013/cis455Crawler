@@ -29,7 +29,7 @@ public class XPathCrawler {
 	public static String CRAWLERS[] = null;
 	public static int MAX_SIZE = -1;
 	private static int MAX_PAGES = -1;
-	private static int NO_OF_THREADS = 50;
+	private static int NO_OF_THREADS = 20;
 	public HashMap<String, DomainRules> domainToRulesMapping = null;
 	public static List<Thread> subThreads = new ArrayList<Thread>();
 	private static XPathCrawler crawler = null;
@@ -121,6 +121,7 @@ public class XPathCrawler {
 			DBWrapper d=new DBWrapper();
 			d.truncateVisitedStore();
 			for (String url : STARTING_URLS) {
+				
 				queue.add(url); // this crawler class just enqueues the first
 								// URL and the threads handle the rest
 			}
@@ -233,6 +234,7 @@ public class XPathCrawler {
 			}
 		}
 		if (killTime = true) {
+			
 			// kill All threads or else wait for them to complete
 			SYSTEM_SHUTDOWN = true; // state used by the threads to determine if
 			WorkerServlet.STATUS = "done";			// they should stop running
@@ -275,6 +277,7 @@ public class XPathCrawler {
 			v.setUrl(hashUrl);
 			indexDoc.put(v);
 		}
+		
 	}
 
 	public static BigInteger convertToBigInt(byte[] data) {

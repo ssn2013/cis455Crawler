@@ -3,9 +3,9 @@ package com.datformers.mapreduce.worker.resources;
 import java.util.HashMap;
 import java.util.Map;
 
-
 import com.datformers.resources.HttpClient;
 import com.datformers.crawler.XPathCrawler;
+import com.datformers.crawler.XPathCrawlerThread;
 import com.datformers.servlets.WorkerServlet;
 
 /*
@@ -41,6 +41,7 @@ public class WorkerStatusUpdator implements Runnable {
 				requestParameters.put("totalURLCount", "" + XPathCrawler.totalURLCount);
 				String urlString = "http://" + masterIP + ":" + masterPort
 						+ "/master/workerstatus";
+				
 				client.makeGetRequest(urlString, Integer.parseInt(masterPort.trim()), requestParameters);
 				// Now Sleep
 				

@@ -178,6 +178,7 @@ public class WorkerServlet extends HttpServlet {
 		//System.out.println("PROCESSING CRAWL REQUEST FROM MASTER");
 		try {
 			//save the WorkerServlet object in XPathCrawler
+			
 			XPathCrawler.setWorkerServletOb(this);
 			StringBuilder buffer = new StringBuilder();
 			BufferedReader reader = request.getReader();
@@ -201,7 +202,9 @@ public class WorkerServlet extends HttpServlet {
 				seedUrl = new String[url.length()];
 				for (int i = 0; i < url.length(); i++) {
 					// seedUrl[i] = url.getJSONObject(i).getString("host");
+					
 					seedUrl[i]= url.getString(i).toString();
+					
 //					args[0]+= url.getString(i).toString()+delim;
 				}
 				//removing last occurrence of delim
@@ -415,6 +418,7 @@ class CheckPointThread implements Runnable {
 					ws.updateCompletion();
 					continue;
 				}
+				
 				WorkerThread worker = new WorkerThread(queue.getQueue(),ws.fileManagementObject,ws,ws.storageDir+"/spoolIn/"+ws.otherWorkers[i]);
 				Thread t = new Thread(worker);
 				ws.threadPool.add(t);
@@ -422,11 +426,11 @@ class CheckPointThread implements Runnable {
 				
 			}
 			else {
-				if(map.getQueueAtIndex(i).isEmpty()) {
+				if(map.getQueueAtIndex(i-1).isEmpty()) {
 					ws.updateCompletion();
 					continue;
 				}
-				WorkerThread worker = new WorkerThread(map.getQueueAtIndex(i),ws.fileManagementObject,ws,ws.storageDir+"/spoolOut/"+ws.otherWorkers[i]);
+				WorkerThread worker = new WorkerThread(map.getQueueAtIndex(i-1),ws.fileManagementObject,ws,ws.storageDir+"/spoolOut/"+ws.otherWorkers[i]);
 				Thread t = new Thread(worker);
 				ws.threadPool.add(t);
 				t.start();

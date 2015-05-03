@@ -77,7 +77,7 @@ public class WorkerThread implements  Runnable{
 					e.printStackTrace();
 				}
 				client.makePostRequest(urlString, Integer.parseInt(hostname.split(":")[1]), "text/plain", urlToSend);
-//				/System.out.println("PushDataThread:run: Made push requet to: "+hostname);
+				System.out.println("PushDataThread:run: Made push requet to: "+hostname);
 				urlToSend="";
 			}
 		}

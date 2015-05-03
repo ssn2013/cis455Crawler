@@ -180,6 +180,7 @@ public class HttpClient {
 		}
 		body = bodyBuffer.toString();
 		
+		
 		bodyInputStream = new ByteArrayInputStream(body.getBytes()); //Create an InputStream of the body and return the same
 
 		//Setting as HTML or not based on content-type

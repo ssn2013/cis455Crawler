@@ -50,9 +50,9 @@ public class WorkerServlet extends HttpServlet {
 	public void init(ServletConfig servletConfig) throws javax.servlet.ServletException {
 //		super.init(servletConfig);
 		masterIPPort = servletConfig.getInitParameter("master"); //fetch details of master
-		storageDir = servletConfig.getInitParameter("storagedir"); //fetch details of storage directory
+		storageDir = servletConfig.getInitParameter("crawlerstore"); //fetch details of storage directory
 		if(storageDir.endsWith("/")) storageDir=storageDir.substring(0,storageDir.length()-1);   //the store dir WLL not have / at end!! 
-		dbDir = servletConfig.getInitParameter("databasedir"); //fetch details of database directory
+		dbDir = servletConfig.getInitParameter("crawlerdb"); //fetch details of database directory
 		DBWrapper.initialize(dbDir); //initialize DB environment
 //		DBWrapper.close();
 		port = Integer.parseInt(servletConfig.getInitParameter("port")); //fetch port details

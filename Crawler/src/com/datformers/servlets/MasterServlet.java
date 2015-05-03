@@ -38,7 +38,7 @@ public class MasterServlet extends HttpServlet{
 	private int maxRequests;
 	public BigInteger hashRange[];
 	public String workers[];
-	private String crawlerFilePath="/mnt/crawlers";
+	private String storageDir=null;
 	private String crawl_status ="idle";
 	public void init(ServletConfig servletConfig) throws javax.servlet.ServletException {
 		super.init(servletConfig);
@@ -49,6 +49,7 @@ public class MasterServlet extends HttpServlet{
 
 	public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException  {
 		try{
+			if(storageDir==null) storageDir=getInitParameter("crawlerstore");
 			if(request.getPathInfo()!=null&&request.getPathInfo().contains("workerstatus")) {
 				
 				String ipAddress = request.getHeader("X-FORWARDED-FOR");
@@ -184,7 +185,7 @@ public class MasterServlet extends HttpServlet{
 	}
 
 	public void createCrawlerFiles() {
-		File f=new File(crawlerFilePath);
+		File f=new File(storageDir+"/crawlers");
 		workers=crawlerStatusMap.keySet().toArray(new String[crawlerStatusMap.keySet().size()]);
 		try {
 			f.createNewFile();
@@ -206,7 +207,7 @@ public class MasterServlet extends HttpServlet{
 		out.close();
 	}
 	public void readCrawlerFiles() {
-		File f=new File(crawlerFilePath);
+		File f=new File(storageDir+"/crawlers");
 		if(f.exists()) {
 			String line;String craw="";
 			try (BufferedReader br = new BufferedReader(new FileReader(f))) {

@@ -27,9 +27,9 @@ public class WorkerThread implements  Runnable{
 
 	public WorkerThread(ArrayList<String> queue, FileManagement fileManagement, WorkerServlet parent,String hostname, String hostnameIp) {
 		this.queue=queue;
-//		for(String str: queue) {
-//			System.out.println("Queue to save contains: "+str);
-//		}
+		//		for(String str: queue) {
+		//			System.out.println("Queue to save contains: "+str);
+		//		}
 		this.fileManagement = fileManagement;
 		this.parent = parent;
 		this.hostname=hostname;
@@ -57,14 +57,14 @@ public class WorkerThread implements  Runnable{
 			System.out.println("Exception occurred in fetching file name");
 			e.printStackTrace();
 		}
-		
-		if(hostnameIp!=null) {
-			String urlToSend="";
-			for(String url:queue) {
 
-				out.println(url);
-				//send the file to the crawler
 
+		String urlToSend="";
+		for(String url:queue) {
+
+			out.println(url);
+			//send the file to the crawler
+			if(hostnameIp!=null) {
 				urlToSend+=url + "\n";
 				if(urlToSend.getBytes().length>(1.5*1024*1024)) {
 					//this packet will not be sent out!		
@@ -80,8 +80,10 @@ public class WorkerThread implements  Runnable{
 					client.makePostRequest(urlString, Integer.parseInt(hostname.split(":")[1]), "text/plain", urlToSend);
 					//System.out.println("PushDataThread:run: Made push requet to: "+hostname);
 					urlToSend="";
-				}
+				}	
 			}
+		}
+		if(hostnameIp!=null) {
 			if(urlToSend.length()>0) {
 				//System.out.println("Last chance to send");
 				String urlString = "http://"+hostnameIp+"/crawler/pushdata";
@@ -97,6 +99,7 @@ public class WorkerThread implements  Runnable{
 				urlToSend="";
 			}
 		}
+
 		//change state and call it quits
 		out.close();
 		queue.clear();

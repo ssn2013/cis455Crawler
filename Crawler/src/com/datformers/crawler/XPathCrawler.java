@@ -237,7 +237,7 @@ public class XPathCrawler {
 				}
 			}
 		}
-		if (killTime = true) {
+		if (killTime == true) {
 			
 			// kill All threads or else wait for them to complete
 			SYSTEM_SHUTDOWN = true; // state used by the threads to determine if

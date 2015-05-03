@@ -42,13 +42,13 @@ public class OutgoingMap {
 	public static void createInstance(String []keys) {
 		queue=new OutgoingMap();
 		queue.outgoingCrawlQueue= new ArrayList<Set<String>>(keys.length);
-		XPathCrawler.selfIndex=0;
-		for(int i=1;i<keys.length;i++) {
+		
+		for(int i=0;i<keys.length;i++) {
 			
-//				if(keys[i].contains("158.130.108.8")) {
-//					XPathCrawler.selfIndex=i;
-//					continue;
-//				}
+				if(keys[i].equals(XPathCrawler.selfAddress)) {
+					XPathCrawler.selfIndex=i;
+					
+				}
 			
 			Set<String> tmp=new HashSet<String>();
 			queue.outgoingCrawlQueue.add(tmp);

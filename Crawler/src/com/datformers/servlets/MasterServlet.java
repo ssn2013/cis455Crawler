@@ -1,10 +1,13 @@
 package com.datformers.servlets;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
@@ -176,7 +179,42 @@ public class MasterServlet extends HttpServlet{
 
 	public void doHashDiv() {
 		if(hashRange!=null) return; 
-		workers=crawlerStatusMap.keySet().toArray(new String[crawlerStatusMap.keySet().size()]);
+		File f=new File("/mnt/crawlers");
+		if(f.exists()) {
+			String line;String craw="";
+			try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+				while ((line = br.readLine()) != null) {
+					if(craw.equals("")) craw=line;
+					else craw=craw+";;;"+line;
+				}
+				workers=craw.split(";;;");
+				br.close();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		else {
+			workers=crawlerStatusMap.keySet().toArray(new String[crawlerStatusMap.keySet().size()]);
+			try {
+				f.createNewFile();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			PrintWriter out = null;
+			try {
+				out = new PrintWriter(new BufferedWriter(
+						new FileWriter(f,true)));
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			for(int i=0;i<workers.length;i++) {
+				out.println(workers[i]);
+			}
+			out.close();
+		}
 		hashRange=new BigInteger[crawlerStatusMap.keySet().size()];
 		BigInteger range = new BigInteger(
 				"ffffffffffffffffffffffffffffffffffffffff", 16)
@@ -290,13 +328,14 @@ public class MasterServlet extends HttpServlet{
 				//And here were are making life more complicated
 				String[] ipSet = new String[crawlerStatusMap.keySet().size()];
 				int i=1;
-				for(String key2: crawlerStatusMap.keySet()) {
+				for(String key2: workers) {
 					if(key.equals(key2))
 						continue;
 					ipSet[i++] = key2;
 				}
 				ipSet[0] = key;
-				requestObject.put("crawler", new JSONArray(ipSet));
+				requestObject.put("crawler", new JSONArray(workers));
+				requestObject.put("self", key);
 
 //				System.out.println("SENDING: TO:"+"http://"+key+"/crawler/startcrawl"
 //						+"\nPORT: "+crawlerStatusMap.get(key).getPort()

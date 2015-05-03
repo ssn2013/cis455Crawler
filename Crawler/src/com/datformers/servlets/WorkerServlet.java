@@ -40,6 +40,7 @@ public class WorkerServlet extends HttpServlet {
 	private Thread wkt;
 	public static String seedUrl[];
 	public String otherWorkers[];
+	public String selfAddress;
 
 	//Job handling
 	public JobDetails currentJob = null;
@@ -195,6 +196,7 @@ public class WorkerServlet extends HttpServlet {
 			JSONArray url = obj.getJSONArray("urls");
 			JSONArray crawlWorkers = obj.getJSONArray("crawler");
 			String maxRequests=obj.getString("maxRequests");
+			selfAddress=obj.getString("self");
 					
 			//start the crawling
 			String args[]=new String[3];
@@ -221,7 +223,7 @@ public class WorkerServlet extends HttpServlet {
 			}
 			
 			countOfCompletedThreads = 0;
-			CrawlerStartHelper myrunnable = new CrawlerStartHelper(args,seedUrl,otherWorkers);
+			CrawlerStartHelper myrunnable = new CrawlerStartHelper(args,seedUrl,otherWorkers,selfAddress);
 	     	new Thread(myrunnable).start();
 			
 	     	response.setContentType("text/plain");
@@ -338,16 +340,18 @@ class CrawlerStartHelper implements Runnable {
 	private String args[];
 	private String urls[];
 	private String workers[];
-	CrawlerStartHelper(String []ar,String []u,String []w) {
+	private String selfAddress;
+	CrawlerStartHelper(String []ar,String []u,String []w,String self) {
 	urls=u;
 	args=ar;
 	workers=w;
+	selfAddress=self;
 	}
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
 		try {
-			XPathCrawler.start(args,urls,workers);
+			XPathCrawler.start(args,urls,workers,selfAddress);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -412,7 +416,7 @@ class CheckPointThread implements Runnable {
 //		System.out.println("Threadpool created");
 		for(int i=0;i<ws.otherWorkers.length;i++) {
 //			System.out.println("other work: "+ws.otherWorkers[i]);
-			if(i==0) {
+			if(i==XPathCrawler.selfIndex) {
 				if(queue.isEmpty()) {
 //					System.out.println("the queue is empty");
 					ws.updateCompletion();
@@ -426,11 +430,11 @@ class CheckPointThread implements Runnable {
 				
 			}
 			else {
-				if(map.getQueueAtIndex(i-1).isEmpty()) {
+				if(map.getQueueAtIndex(i).isEmpty()) {
 					ws.updateCompletion();
 					continue;
 				}
-				WorkerThread worker = new WorkerThread(map.getQueueAtIndex(i-1),ws.fileManagementObject,ws,ws.storageDir+"/spoolOut/"+ws.otherWorkers[i]);
+				WorkerThread worker = new WorkerThread(map.getQueueAtIndex(i),ws.fileManagementObject,ws,ws.storageDir+"/spoolOut/"+ws.otherWorkers[i]);
 				Thread t = new Thread(worker);
 				ws.threadPool.add(t);
 				t.start();

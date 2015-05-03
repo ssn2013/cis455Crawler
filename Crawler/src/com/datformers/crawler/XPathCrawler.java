@@ -39,6 +39,7 @@ public class XPathCrawler {
 	public static boolean SYSTEM_SHUTDOWN = false;
 	public static WorkerServlet ws = null;
 	public static boolean STOP_CRAWLER = false;
+	public static String selfAddress;
 
 	public static XPathCrawler getInstance() {
 		return crawler;
@@ -97,10 +98,12 @@ public class XPathCrawler {
 				while ((line = br.readLine()) != null) {
 					queue.add(line);
 				}
+				br.close();
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			
 
 		}
 		return true;
@@ -133,17 +136,18 @@ public class XPathCrawler {
 		return true;
 	}
 
-	public static void start(String args[], String urls[], String workers[]) {
+	public static void start(String args[], String urls[], String workers[],String self) {
 		try {
 			SYSTEM_SHUTDOWN = false;
 			count = 0;
 			STOP_CRAWLER = false;
-
+			selfAddress=self;
 			if (args.length < 3) {
 //				System.out
 //						.println("3 Arguments: 1. Starting URL, 2. DB directory, 3. Maximum size required 4.Num Pages 5.Crawlers");
 				return;
 			}
+			
 			STARTING_URLS = urls; // starting URL
 			STORE_DIRECTORY = args[0]; // director of database environment
 			CRAWLERS = workers;

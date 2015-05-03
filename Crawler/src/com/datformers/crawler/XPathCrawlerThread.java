@@ -155,9 +155,12 @@ public class XPathCrawlerThread implements Runnable{
 				if (newUrl != null) {
 					if (!visitedURL.contains(newUrl)) {
 						VisitedURLStore Doc = checkDB(newUrl);
-						if (Doc == null) {
-							visitedURL.add(newUrl);
+						synchronized (visitedURL) {
+							if (Doc == null) {
+								visitedURL.add(newUrl);
+							}
 						}
+						
 					}
 				}
 	return;
@@ -420,7 +423,7 @@ public class XPathCrawlerThread implements Runnable{
 				}
 			}
 			if(XPathCrawler.selfIndex==index) systemUrls.add(url);
-			else map.add(index-1, url);
+			else map.add(index, url);
 		}
 		return systemUrls;
 	}

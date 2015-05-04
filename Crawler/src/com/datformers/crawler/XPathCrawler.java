@@ -113,6 +113,7 @@ public class XPathCrawler {
 		domainToRulesMapping = new HashMap<String, DomainRules>();
 		String delim = ";;|;;";
 		URLQueue queue = URLQueue.getInstance(); // instance of the queue of
+		
 		XPathCrawlerThread.visitedURL.clear();// URLs
 		queue.clear();
 		String keys[] = CRAWLERS;
@@ -120,7 +121,8 @@ public class XPathCrawler {
 											// URLs for each worker
 		// have to check if we have to resume operation or use seed urls
 		XPathCrawlerThread.visitedURL.clear();
-		if (STARTING_URLS != null) {
+		if (STARTING_URLS!=null) {
+			
 			DBWrapper d=new DBWrapper();
 			d.truncateVisitedStore();
 			for (String url : STARTING_URLS) {

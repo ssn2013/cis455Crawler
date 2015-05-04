@@ -14,12 +14,16 @@ public class URLQueue {
 	private URLQueue() {
 		
 	}
+	public int size() {
+		return urlQueue.size();
+	}
 	public static URLQueue getInstance() { //singleton instance of queue
 		if(queue == null) {
 			queue = new URLQueue();
 		}
 		return queue;
 	}
+	
 	/*
 	 * Method to enqueue URL
 	 */

@@ -64,6 +64,7 @@ public class XPathCrawlerThread implements Runnable{
 	 */
 	private String getDomain(String url) {
 		String host =url;
+//		/System.out.println("hist"+url);
 		if(url.startsWith("http"))
 			host = url.substring(url.indexOf('/')+2); //remove protocol part
 		if(host.contains("/"))
@@ -242,6 +243,7 @@ public class XPathCrawlerThread implements Runnable{
 									VisitedURLStore gotDoc1=checkDB(str);
 									if(gotDoc1!=null) continue;	
 									visitedURL.add(str);
+									
 									queue.add(str);
 								}
 							}

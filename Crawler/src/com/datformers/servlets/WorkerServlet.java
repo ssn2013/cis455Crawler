@@ -215,6 +215,7 @@ public class WorkerServlet extends HttpServlet {
 			} else {
 				seedUrl = null;
 			}
+			
 			otherWorkers = new String [crawlWorkers.length()];
 			args[0]=storageDir;
 			args[1]=""+5;
@@ -430,8 +431,8 @@ class CheckPointThread implements Runnable {
 
 	@Override
 	public void run() {
-//		String spoolIn = ws.storageDir + "/spool_in";
-//		createDir(spoolIn);
+		String spoolIn = ws.storageDir + "/spoolIn";
+		createDir(spoolIn);
 //		System.out.println("RUN FOR CHECKPOINTING THREAD");
 		ws.fileManagementObject = new FileManagement(ws.storageDir, null, 0);
 		OutgoingMap map=OutgoingMap.getInstance();
@@ -446,7 +447,7 @@ class CheckPointThread implements Runnable {
 					ws.updateCompletion();
 					continue;
 				}
-				
+				System.out.println("checkpoint thread called");
 				WorkerThread worker = new WorkerThread(queue.getQueue(),ws.fileManagementObject,ws,ws.storageDir+"/spoolIn/"+ws.otherWorkers[i], null);
 				Thread t = new Thread(worker);
 				ws.threadPool.add(t);

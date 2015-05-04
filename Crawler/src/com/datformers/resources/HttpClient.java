@@ -336,6 +336,7 @@ public class HttpClient {
 			}
 			method = "HEAD";
 			if(!isHTTPS) {
+				
 				URL oracle = new URL(url);
 				HTTPconnection = (HttpURLConnection)oracle.openConnection();
 				//Write Headers

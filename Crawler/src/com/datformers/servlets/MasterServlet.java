@@ -82,7 +82,7 @@ public class MasterServlet extends HttpServlet{
 				if(checkForCompletion())
 					stopCrawling();
 				if(crawl_status.equals("checkpoint")&&checkForCheckpoitingCompletion())
-					makeCrawlRequests(true);
+					makeCrawlRequests(false);
 			} else if(request.getPathInfo()!=null&&request.getPathInfo().contains("startCrawling")) {
 				doHashDiv(false);
 				//Make crawl requests to all crawlers

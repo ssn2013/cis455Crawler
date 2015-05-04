@@ -1,6 +1,5 @@
-package storage;
+package com.datformers.storage;
 
-import com.datformers.storage.ParsedDocument;
 import com.sleepycat.je.Environment;
 
 import java.io.File;
@@ -30,7 +29,6 @@ public class LinksDBWrapper {
 
 		// if the directory does not exist, create it
 		if (!envHome.exists()) {
-			System.out.println("creating directory: " + env);
 			boolean result = false;
 			try {
 				envHome.mkdir();
@@ -39,17 +37,14 @@ public class LinksDBWrapper {
 				// handle it
 			}
 			if (result) {
-				System.out.println("DIR created");
+//				System.out.println("DIR created");
 			}
 			//envHome = theDir;
 		}
 	}
 
 	public void loadIndices() {
-		System.out.println("STORE"+store);
 		linksKey = store.getPrimaryIndex(BigInteger.class, ParsedDocument.class);
-		System.out.println("AFTER INDICES");
-
 	}
 
 	public void configure() {
@@ -67,7 +62,6 @@ public class LinksDBWrapper {
 			myEnv = new Environment(envHome, myEnvConfig);
 			
 			store = new EntityStore(myEnv, "EntityStore1", storeConfig);
-			System.out.println("BEFORE LOAD INDICES");
 			loadIndices();
 		} catch (DatabaseException dbe) {
 			System.err.println("Error opening environment and store: "

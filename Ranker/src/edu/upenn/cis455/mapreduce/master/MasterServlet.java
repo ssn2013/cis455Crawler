@@ -2,17 +2,15 @@ package edu.upenn.cis455.mapreduce.master;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.List;
 
+import javax.servlet.ServletConfig;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import com.sleepycat.je.rep.utilint.DbNullNode;
 
 import edu.upenn.cis455.mapreduce.master.resources.WorkerStatusMap;
 import edu.upenn.cis455.mapreduce.util.HttpClient;
@@ -26,93 +24,131 @@ public class MasterServlet extends HttpServlet {
 
 	static final long serialVersionUID = 455555001;
 	private Map<String, WorkerStatusMap> workerStatusMaps = new HashMap<String, WorkerStatusMap>(); // map
-																									// of
-																									// all
-																									// worke
-																									// //
-																									// and
-																									// their
-	int noOfIterations = 0; // informations
+	// of
+	// all
+	// worker
+	// node
+
+
+	int countOfIterations = 0;
+	private int totalNoOfIterations = 0;
+
 	private JobDetails presentMapJob; // details of present running job
-	private String job = "edu.upenn.cis455.mapreduce.job.Ranker";
-	private String inputDB = "/home/aryaa/PageRank/Ranker/database";
-	private String outputDB = "database_output";
+	private String job = null;
+	private String inputDB = null;
+	private String outputDB = null;
 	private int numMapThreads = 10;
 	private int numReduceThreads = 10;
 
-	/*
-	 * Remove all this
-	 */
-	/*
-	 * String con1 =
-	 * "<p><b>China</b> (<a href=\"/wiki/Simplified_Chinese_characters\" title=\"Simplified Chinese characters\">"
-	 * + "simplified Chinese</a>: <span lang=\"zh-Hans\">中国</span>; " +
-	 * "<a href=\"/wiki/Traditional_Chinese_characters\" title=\"Traditional Chinese characters\">"
-	 * +
-	 * "traditional Chinese</a>: <span lang=\"zh-Hant\">中國</span>; <a href=\"/wiki/Pinyin\" title=\"Pinyin\">pinyin</a>: <span lang=\"zh-Latn-pinyin\">Zhōngguó</span>), officially the"
-	 * +
-	 * " <b>People's Republic of China</b> (<b>PRC</b>), is a <a href=\"/wiki/Sovereign_state\" title=\"Sovereign state\">sovereign state</a>"
-	 * +
-	 * " located in <a href=\"/wiki/East_Asia\" title=\"East Asia\">East Asia</a>."
-	 * ; String con2 =
-	 * "<div class=\"fc-item__standfirst\"><p>A frightened buffalo storms into a primary school in China, and chases students across a playground</p></div>"
-	 * + "<aside class=\"fc-item__meta js-item__meta\">" +
-	 * "<time class=\"fc-item__timestamp\" datetime=\"2015-04-16T18:57:39+0000\" data-timestamp=\"1429210659000\" data-relativeformat=\"short\">"
-	 * ;
-	 * 
-	 * String con3 =
-	 * "<p>The <b>Internet</b> is a global system of interconnected <a href=\"/wiki/Computer_network\" title=\"Computer network\">computer networks</a> that use the standard <a href=\"/wiki/Internet_protocol_suite\" "
-	 * +
-	 * "title=\"Internet protocol suite\">Internet protocol suite</a> (TCP/IP) to link several billion devices worldwide. It is a <i>network of networks</i><sup id=\"cite_ref-1\""
-	 * +
-	 * " class=\"reference\"><a href=\"#cite_note-1\"><span>[</span>1<span>]</span></a></sup> that consists of millions of private, public, academic, business, and government "
-	 * +
-	 * "networks of local to global scope, linked by a broad array of electronic, wireless, and optical networking technologies. The Internet carries an extensive range of information resources and services, such as the inter-linked <a href=\"/wiki/Hypertext\" title=\"Hypertext\">hypertext</a> documents and <a href=\"/wiki/Web_application\" title=\"Web application\">"
-	 * +
-	 * "applications</a> of the <a href=\"/wiki/World_Wide_Web\" title=\"World Wide We\">World Wide Web</a> (WWW), the <a href=\"/wiki/Information_infrastructure\" title=\"Information infrastructure\">infrastructure</a> to support <a href=\"/wiki/Email\" title=\"Email\">email</a>, and <a href=\"/wiki/Peer-to-peer\" title=\"Peer-to-peer\">peer-to-peer</a> networks for "
-	 * +
-	 * "<a href=\"/wiki/File_sharing\" title=\"File sharing\">file sharing</a>"
-	 * +
-	 * "and <a href=\"/wiki/Voice_over_IP\" title=\"Voice over IP\">telephony</a>.</p>"
-	 * ;
-	 */
+//	HashMap<String, String> prevState = new HashMap<String, String>();
+	
+	@Override
+	public void init(ServletConfig servletConfig) throws javax.servlet.ServletException {
+		super.init(servletConfig);
+		this.inputDB = servletConfig.getInitParameter("InputDB"); //fetch details of storage directory
+		this.outputDB = servletConfig.getInitParameter("OutputDB");
+		int iterations  = Integer.parseInt(servletConfig.getInitParameter("iterations"));
+		this.totalNoOfIterations = iterations+1;
+	}
 
-	/*
-	 * doGet method of servlet
-	 * 
-	 * @see
-	 * javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest
-	 * , javax.servlet.http.HttpServletResponse)
-	 */
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws java.io.IOException {
-
-		System.out.println("MasterServlet:doGet: Got GET request "
-				+ request.getServletPath());
-		if (request.getServletPath().contains("workerstatus")) { // redirect
-																	// worker
-																	// status
-																	// calls
+		if (request.getServletPath().contains("workerstatus")) {
 			processWorkerStatusRequest(request, response);
-			
-		} else if (request.getServletPath().contains("preprocess")) {
 
-			String[] ipPorts = {};// Hard code IP:Port values
-			Map<String, String> workersIps = new HashMap<String, String>();
-			for (int i = 0; i < ipPorts.length; i++) {
-				String key = "&worker" + i;
-				workersIps.put(key, ipPorts[i]);
-			}
-			String[] curipPort = request.getHeader("X-FORWARDED-FOR")
-					.split(":");
-			String url = "http://" + curipPort[0] + "/worker/preprocess";
-			HttpClient client = new HttpClient();
-			client.makeRequest(url, Integer.parseInt(curipPort[1]), workersIps);
-
-		} 
-		else if (request.getServletPath().contains("collect")) {
-			aggregateAllDB();
+		} else if (request.getServletPath().contains("status")) {
+			processStatusRequest(request, response);
+		} else if (request.getServletPath().contains("pagerank")) {
+			startPageRank();
+			response.setStatus(200);
+		} else {
+			response.getWriter().println("<html><body><p>Hi this is the master node</p></body></html>");
 		}
+
+	}
+
+	// Page Rank
+
+	public void startPageRank() {
+		String className = "";
+		String inputDir = "";
+		String outputDir = "";
+		String databaseIO = "";
+		int noMapThreads = numMapThreads;
+		int noReduceThreads = numReduceThreads;
+		JobDetails requestJob = new JobDetails();
+		countOfIterations = 0;
+		System.out.println("Master: Starting page rank");
+		switch (countOfIterations) {
+		case 0:
+			System.out.println("Master: case 0");
+			className = "edu.upenn.cis455.mapreduce.job.FindSinks";
+			inputDir = inputDB;
+			outputDir = "output0";
+			databaseIO = "input";
+			break;
+
+		case 1:
+
+			String job = "edu.upenn.cis455.mapreduce.job.RemoveSinks";
+			className = job;
+			inputDir = "output0";
+			outputDir = "output1";
+			break;
+			
+		default:
+//			if(countOfIterations==totalNoOfIterations) {
+//				className = "edu.upenn.cis455.mapreduce.job.Ranker";
+//				inputDir = "output" + countOfIterations;
+//				outputDir = outputDB;
+//				databaseIO = "output";	
+//			} else {
+				className = "edu.upenn.cis455.mapreduce.job.Ranker";
+				inputDir = "output" + (countOfIterations - 1);
+				outputDir = "output" + countOfIterations;
+//			}	
+		}
+
+		requestJob.setJob(className);
+		requestJob.setInputDir(inputDir);
+		requestJob.setOutputDir(outputDir);
+		requestJob.setNumMapThreads(noMapThreads);
+		requestJob.setNumReduceThreads(noReduceThreads);
+
+		// Sending data to the worker
+		StringBuffer dataToSend = new StringBuffer("job=" + className); //forming data for map
+		dataToSend.append("&databaseIO="+databaseIO);
+		dataToSend.append("&input=" + inputDir);
+		dataToSend.append("&numThreads=" + noMapThreads);
+		int i = 1;
+		List<String> availableWorkers = new ArrayList<String>();
+		for (String key : workerStatusMaps.keySet()) { // go through list of all
+			// worker and look for
+			// idle ones
+			if (workerStatusMaps.get(key).getStatus().trim().equals("idle")) {
+				availableWorkers.add(key);
+				dataToSend.append("&worker" + i + "=" + key);
+				i++;
+				System.out.println("Master: adding to available worker: "+key);
+			}
+		}
+		requestJob.setNumWorkers(availableWorkers.size()); // keep track of
+		// worker working on
+		// the job
+		dataToSend.append("&numWorkers=" + availableWorkers.size());
+		presentMapJob = requestJob; // if there are threads, set this to current
+		// job
+		String data = dataToSend.toString();
+		for (String key : availableWorkers) {
+			String urlString = "http://" + key.trim() + "/worker/runmap";
+			HttpClient httpClient = new HttpClient();
+			System.out.println("Master: making post request to URL: "+urlString+" Data: "+data);
+			InputStream responseBody = httpClient.makePostRequest(urlString,
+					Integer.parseInt(key.split(":")[1].trim()),
+					"application/x-www-form-urlencoded", data);
+
+		}
+
 	}
 
 	/*
@@ -124,140 +160,6 @@ public class MasterServlet extends HttpServlet {
 	 */
 	@Override
 	public void doPost(HttpServletRequest request, HttpServletResponse response) {
-		// System.out.println("Post request received: "+request.getPathInfo());
-		// if(request.getPathInfo().contains("status")) { //redirect status
-		// calls (from the form) to corresponding method
-		// processFormSubmissionPost(request, response);
-		// }
-	}
-
-	/*
-	 * Method handling /status POST request from the form
-	 */
-	private void processFormSubmissionPost() {
-		// Getting all values from form
-
-		if (noOfIterations == 0) {
-
-			inputDB = "/home/aryaa/PageRank/Ranker/database";
-		} else {
-			inputDB = "/home/aryaa/PageRank/Ranker/storage/input";
-		}
-		String className = job;
-		String inputDir = inputDB;
-		String outputDir = outputDB;
-		int noMapThreads = numMapThreads;
-		int noReduceThreads = numReduceThreads;
-		JobDetails requestJob = new JobDetails(); // temporary object to store
-													// details fetched from the
-													// form
-		requestJob.setJob(className);
-		requestJob.setInputDir(inputDir);
-		requestJob.setOutputDir(outputDir);
-		requestJob.setNumMapThreads(noMapThreads);
-		requestJob.setNumReduceThreads(noReduceThreads);
-
-		// Sending data to the worker
-		StringBuffer dataToSend = new StringBuffer("job=" + className); // forming
-																		// the
-																		// data
-																		// part
-																		// for
-																		// /runmap
-		dataToSend.append("&input=" + inputDir);
-		dataToSend.append("&numThreads=" + noMapThreads);
-		int i = 1;
-		List<String> availableWorkers = new ArrayList<String>();
-		for (String key : workerStatusMaps.keySet()) { // go through list of all
-														// worker and look for
-														// idle ones
-			if (workerStatusMaps.get(key).getStatus().trim().equals("idle")) {
-				availableWorkers.add(key);
-				dataToSend.append("&worker" + i + "=" + key);
-				i++;
-			}
-		}
-		requestJob.setNumWorkers(availableWorkers.size()); // keep track of
-															// worker working on
-															// the job
-		dataToSend.append("&numWorkers=" + availableWorkers.size());
-		presentMapJob = requestJob; // if there are threads, set this to current
-									// job
-		String data = dataToSend.toString();
-		System.out
-				.println("MasterServlet:processFormSubmissionPost: Data being sent: "
-						+ data);
-		for (String key : availableWorkers) {
-			String urlString = "http://" + key.trim() + "/worker/runmap";
-			System.out.println("URL STRING: " + urlString);
-			// Custom httpclient
-			HttpClient httpClient = new HttpClient();
-			InputStream responseBody = httpClient.makePostRequest(urlString,
-					Integer.parseInt(key.split(":")[1].trim()),
-					"application/x-www-form-urlencoded", data);
-
-		}
-
-	}
-
-	private void aggregateAllDB() {
-
-		// inputDB = "/home/aryaa/PageRank/Ranker/database";
-
-		String className = job;
-		String inputDir = inputDB;
-		String outputDir = outputDB;
-		int noMapThreads = numMapThreads;
-		int noReduceThreads = numReduceThreads;
-		JobDetails requestJob = new JobDetails(); // temporary object to store
-													// details fetched from the
-													// form
-		requestJob.setJob(className);
-		requestJob.setInputDir(inputDir);
-		requestJob.setOutputDir(outputDir);
-		requestJob.setNumMapThreads(noMapThreads);
-		requestJob.setNumReduceThreads(noReduceThreads);
-
-		// Sending data to the worker
-		StringBuffer dataToSend = new StringBuffer("job=" + className); // forming
-																		// the
-																		// data
-																		// part
-																		// for
-																		// /runmap
-		dataToSend.append("&input=" + inputDir);
-		dataToSend.append("&numThreads=" + noMapThreads);
-		int i = 1;
-		List<String> availableWorkers = new ArrayList<String>();
-		for (String key : workerStatusMaps.keySet()) { // go through list of all
-														// worker and look for
-														// idle ones
-			if (workerStatusMaps.get(key).getStatus().trim().equals("idle")) {
-				availableWorkers.add(key);
-				dataToSend.append("&worker" + i + "=" + key);
-				i++;
-			}
-		}
-		requestJob.setNumWorkers(availableWorkers.size()); // keep track of
-															// worker working on
-															// the job
-		dataToSend.append("&numWorkers=" + availableWorkers.size());
-		presentMapJob = requestJob; // if there are threads, set this to current
-									// job
-		String data = dataToSend.toString();
-		System.out
-				.println("MasterServlet:processFormSubmissionPost: Data being sent: "
-						+ data);
-		for (String key : availableWorkers) {
-			String urlString = "http://" + key.trim() + "/worker/runmap";
-			System.out.println("URL STRING: " + urlString);
-			// Custom httpclient
-			HttpClient httpClient = new HttpClient();
-			InputStream responseBody = httpClient.makePostRequest(urlString,
-					Integer.parseInt(key.split(":")[1].trim()),
-					"application/x-www-form-urlencoded", data);
-
-		}
 
 	}
 
@@ -269,21 +171,21 @@ public class MasterServlet extends HttpServlet {
 		try {
 			response.setContentType("text/html");
 			StringBuffer stringBufferHTML = new StringBuffer();// forming
-																// response body
-																// i.e form
+			// response body
+			// i.e form
 			stringBufferHTML
-					.append("<html><body><h1>Server Status Page</h1></br><h2>Status of Worker</h2>");
+			.append("<html><body><h1>Server Status Page</h1></br><h2>Status of Worker</h2>");
 			stringBufferHTML
-					.append("<table><tr><th>IP:Port</th><th>Status</th><th>Job</th><th>Keys Read</th><th>Keys Written</th></tr>");
+			.append("<table><tr><th>IP:Port</th><th>Status</th><th>Job</th><th>Keys Read</th><th>Keys Written</th></tr>");
 			for (String key : workerStatusMaps.keySet()) {
 				stringBufferHTML.append("<tr>");
 				WorkerStatusMap workerStatusMap = workerStatusMaps.get(key); // fetch
-																				// details
-																				// of
-																				// given
-																				// worker
-																				// from
-																				// maps
+				// details
+				// of
+				// given
+				// worker
+				// from
+				// maps
 				if (workerStatusMap != null) { // display details in table
 					stringBufferHTML.append("<td>"
 							+ workerStatusMap.getIPPort() + "</td>");
@@ -297,22 +199,15 @@ public class MasterServlet extends HttpServlet {
 							+ workerStatusMap.getKeysWritten() + "</td>");
 				} else {
 					stringBufferHTML
-							.append("<tr><td>"
-									+ workerStatusMap
-									+ "</td><td colspan=\"4\">Error fetching object</td></tr>");
+					.append("<tr><td>"
+							+ workerStatusMap
+							+ "</td><td colspan=\"4\">Error fetching object</td></tr>");
 				}
 				stringBufferHTML.append("</tr>");
 			}
 			// Create form for adding job
 			stringBufferHTML
-					.append("</table><br/><h2>Submit a job</h2><form method=\"post\" action=\"status\">"
-							+ "<table><tr><td>Class: </td><td><input type=\"text\" name=\"class\"></td></tr>"
-							+ "<tr><td>Input Dir:</td><td><input type=\"text\" name=\"inputDir\"></td></tr>"
-							+ "<tr><td>Output Dir:</td><td><input type=\"text\" name=\"outputDir\"></td></tr>"
-							+ "<tr><td>Number of Map Threads:</td><td><input type=\"text\" name=\"noMapThreads\"></td></tr>"
-							+ "<tr><td>No of Reduce Threads:</td><td><input type=\"text\" name=\"noReduceThreads\"></td></tr>"
-							+ "<tr><td colspan=\"2\"><input type=\"submit\" value=\"Run\"></td></tr></table></form>"
-							+ "<br/><p>Coded by: Sruthi Nair (sruthin@seas.upenn.edu)</p>");
+			.append("</table></body></html>");
 			response.getWriter().println(stringBufferHTML.toString());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -330,7 +225,6 @@ public class MasterServlet extends HttpServlet {
 			WorkerStatusMap workerStatusMap = new WorkerStatusMap();
 			int port = Integer.parseInt(request.getParameter("port"));
 			String status = request.getParameter("status").trim();
-			System.out.println("STATUS: ---- " + status);
 			workerStatusMap.setStatus(status);
 			String job = request.getParameter("job").trim();
 			workerStatusMap.setJob(job);
@@ -344,16 +238,20 @@ public class MasterServlet extends HttpServlet {
 				ipAddress = request.getRemoteAddr();
 			}
 			workerStatusMap.setIPPort(ipAddress + ":" + port);
-			workerStatusMaps.put(workerStatusMap.getIPPort(), workerStatusMap); // put
-																				// details
-																				// into
-																				// the
-																				// server's
-																				// map
-																				// of
-																				// all
-																				// workers'
-																				// details
+
+			workerStatusMaps.put(workerStatusMap.getIPPort(), workerStatusMap);
+			// Check if All reduce are reached
+//			int count = 0;
+//			if (prevState.containsKey(ipAddress + ":" + port)) {
+//				prevState.put(ipAddress + ":" + port, status);
+//				for (Map.Entry<String, String> entry : prevState.entrySet()) {
+//					String value = entry.getValue();
+//					if (value.equals("idle")) {
+//						count = count + 1;
+//					}
+//				}
+//			}
+
 			System.out.println("WORKER UPDATE:- Port: "
 					+ port
 					+ " Status: "
@@ -368,22 +266,47 @@ public class MasterServlet extends HttpServlet {
 					+ ipAddress
 					+ " Put into map: "
 					+ workerStatusMaps.get(workerStatusMap.getIPPort())
-							.getJob());
+					.getJob());
 			if (presentMapJob != null) {
 				checkAndRunReduce(job);
-			}// check if relevant threads are waiting and
-				// run reduce
+			}
+			if (presentMapJob != null) {
+				checkAndRunNextIteration(job);
+			}
+			
+			// check if relevant threads are waiting and
+			// run reduce
+			/*if (count == 3) {
+				prevState.clear();
+				countOfIterations++;
+				startPageRank();
+
+			}*/
 			response.setStatus(200);
+
 		} catch (Exception e) {
-			System.out
-					.println("EXCEPTION: MasterServlet:processWorkerStatusRequest "
-							+ e.getMessage());
 			e.printStackTrace();
 		}
+
 	}
 
-	public void issuePreprocessRequest() {
+	private void checkAndRunNextIteration(String jobName) {
+		int count = 0;
 
+		for (String key : workerStatusMaps.keySet()) { // for the given job,
+			// the waiting workers
+			WorkerStatusMap map = workerStatusMaps.get(key);
+			if (map.getJob().equals(jobName)
+					&& map.getStatus().equals("idle"))
+				count++;
+		}
+		
+		if(count == presentMapJob.getNumWorkers()) {
+			countOfIterations++;
+			if(countOfIterations>totalNoOfIterations)
+				return;
+			startPageRank();
+		}
 	}
 
 	/*
@@ -394,7 +317,6 @@ public class MasterServlet extends HttpServlet {
 		int count = 0;
 
 		for (String key : workerStatusMaps.keySet()) { // for the given job,
-			System.out.println(key); // take a count of all
 			// the waiting workers
 			WorkerStatusMap map = workerStatusMaps.get(key);
 			if (map.getJob().equals(jobName)
@@ -402,22 +324,17 @@ public class MasterServlet extends HttpServlet {
 				count++;
 		}
 
-		if (count == presentMapJob.getNumWorkers()) { // if the count equals the
-														// number of workers
-														// initially assigned to
-														// the job, start reduce
-														// phase
-			// make the body String
+		if (count == presentMapJob.getNumWorkers()) { 
 			StringBuffer buf = new StringBuffer();
 			buf.append("job=" + presentMapJob.getJob());
 			buf.append("&output=" + presentMapJob.getOutputDir());
 			buf.append("&numThreads=" + presentMapJob.getNumReduceThreads());
 			String body = buf.toString();
 
-			noOfIterations++;
 			// for each given worker make /runreduce call
 			for (String key : workerStatusMaps.keySet()) {
 				HttpClient client = new HttpClient();
+			//	prevState.put(key, "reduce");
 				String url = "http://" + key + "/worker/runreduce";
 				client.makePostRequest(url,
 						Integer.parseInt(key.split(":")[1].trim()),
@@ -425,4 +342,5 @@ public class MasterServlet extends HttpServlet {
 			}
 		}
 	}
+
 }

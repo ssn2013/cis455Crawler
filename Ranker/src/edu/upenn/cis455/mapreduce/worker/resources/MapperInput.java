@@ -5,10 +5,10 @@ import java.util.List;
 /*
  * Class representing a data structure to store key-value pairs for Map phase
  */
-public class KeyValueInput {
+public class MapperInput {
 	private String key;
 	private List<String> value;
-	public KeyValueInput(String key, List<String> value) {
+	public MapperInput(String key, List<String> value) {
 		this.key = key;
 		this.value = value;
 	}

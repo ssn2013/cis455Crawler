@@ -14,21 +14,20 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import com.datformers.storage.DBIndexerWrapper;
 import com.datformers.storage.ParsedDocument;
+import com.sleepycat.je.Transaction;
+import com.sleepycat.persist.EntityCursor;
+import com.sleepycat.persist.PrimaryIndex;
 
-import edu.stanford.nlp.ling.CoreAnnotations.LemmaAnnotation;
-import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
-import edu.stanford.nlp.ling.CoreAnnotations.TokensAnnotation;
-import edu.stanford.nlp.ling.CoreLabel;
-import edu.stanford.nlp.pipeline.Annotation;
-import edu.stanford.nlp.pipeline.StanfordCoreNLP;
-import edu.stanford.nlp.util.CoreMap;
 import edu.upenn.cis455.mapreduce.worker.WorkerServlet;
 
 /*
@@ -36,7 +35,6 @@ import edu.upenn.cis455.mapreduce.worker.WorkerServlet;
  */
 public class FileManagement {
 	private String storageDir;
-	private String inputDir;
 	private String spoolOutDir;
 	private File spoolOutFile;
 	private String spoolInDirName;
@@ -46,36 +44,62 @@ public class FileManagement {
 	private List<PrintWriter> printWritersSpoolOut = new ArrayList<PrintWriter>();
 	private int spoolInCounter = -1;
 	private String listFiles[];
-	private int currentFileIndex = 0;
-	private File currentFile;
-	private BufferedReader bufferedReader = null;
 	public static boolean readComplete = false;
+	private String databaseIO;
 	
-	
-	private static StanfordCoreNLP pipeline;
+	//Stuff for handling input
+	boolean inputFromDb = false;
+	boolean outputToDb = false;
+	BufferedReader inputReader = null;
+	DBIndexerWrapper wrapper = null;
+	EntityCursor<ParsedDocument> cursor = null;
+	PrimaryIndex<BigInteger, ParsedDocument> indexDoc = null;
+	Iterator<ParsedDocument> inputIterator = null;
+	Transaction txn = wrapper.myEnv.beginTransaction(null, null);
 
 	public FileManagement() {
-
+		System.out.println("FileManagement: default constructor called");
 	}
 
-	public FileManagement(String storageDir, String inputDir, int noWorkers) {
-		Properties props;
-		props = new Properties();
-		props.put("annotators", "tokenize,ssplit,pos,lemma");
-		pipeline = new StanfordCoreNLP(props);
-
+	public FileManagement(String storageDir, String inputDir, int noWorkers, String databaseIO) {
+		System.out.println("l1");
+		this.databaseIO = databaseIO;
 		this.storageDir = storageDir;
-		this.inputDir = storageDir + "/" + inputDir;
+		System.out.println("l2");
 		spoolOutDir = storageDir + "/spoolOut";
 		spoolInDirName = storageDir + "/spoolIn";
 		numWorkers = noWorkers;
+		System.out.println("l3");
+
+		String inputName = this.storageDir+"/"+inputDir;
+		System.out.println("FileManagement: input: "+inputName+" databaseIO: "+databaseIO);
+		//prepare input
+		if(databaseIO!=null && databaseIO.equals("input")) {
+			System.out.println("FileManagement: input is db, loading");
+			wrapper = new DBIndexerWrapper(inputName);
+			wrapper.configure();
+			wrapper.loadIndices();
+			indexDoc = wrapper.getDocumentIndex();
+			cursor = indexDoc.entities(txn, null);
+			inputIterator = cursor.iterator();
+			inputFromDb = true;
+		} else if(databaseIO!=null && databaseIO.equals("output")) {
+			System.out.println("FileManagemet: output to DB");
+			outputToDb = true;
+		} else {
+			try {
+				System.out.println("FileManaagement: File input");
+				inputReader = new BufferedReader(new FileReader(new File(inputName)));
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}
+		}
 
 		// create spool directory
 		spoolOutFile = new File(spoolOutDir);
 		if (spoolOutFile.exists()) {
+			System.out.println("FileManagement: Removing existing spoolout");
 			removeDirectoryWithContents(spoolOutFile);
-			System.out
-					.println("Successfully removed existing Spool-Out directory");
 		}
 		// create output files in spoolOut
 		spoolOutFile.mkdir();
@@ -93,8 +117,6 @@ public class FileManagement {
 			try {
 				printWritersSpoolOut.add(new PrintWriter(new FileWriter(f)));
 			} catch (IOException e) {
-				System.out.println("FILEMANAGEMENT EXCEPTION: "
-						+ e.getMessage());
 				e.printStackTrace();
 			}
 		}
@@ -102,28 +124,11 @@ public class FileManagement {
 		// setting up spool in
 		spoolInDir = new File(spoolInDirName);
 		if (spoolInCounter == -1 && spoolInDir.exists()) {
+			System.out.println("FileManagement: Removing exisiting spoolIn");
 			removeDirectoryWithContents(spoolInDir);
 		}
 		spoolInDir.mkdir();
 		
-	}
-
-	/*
-	 * Function to lemmatize the given text
-	 */
-	public static List<String> lemmatize(String documentText) {
-		List<String> lemmas = new LinkedList<String>();
-		Annotation document = new Annotation(documentText);
-		pipeline.annotate(document);
-		List<CoreMap> sentences = document.get(SentencesAnnotation.class);
-		for (CoreMap sentence : sentences) {
-
-			for (CoreLabel token : sentence.get(TokensAnnotation.class)) {
-				lemmas.add(token.get(LemmaAnnotation.class));
-			}
-		}
-
-		return lemmas;
 	}
 
 	/*
@@ -163,7 +168,6 @@ public class FileManagement {
 
 			// write to corresponding file
 			printWritersSpoolOut.get(groupId).println(key + "\t" + value);
-			// System.out.println("FileManagement:writeToSpoolOut: Writing done for KEY: "+key+" INTO: "+groupId+" WITH: "+printWritersSpoolOut.get(groupId));
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
 		}
@@ -173,30 +177,37 @@ public class FileManagement {
 	 * Fetch a single key value pair for map requests This method is called by
 	 * threads to fetch input for map
 	 */
-	public synchronized KeyValueInput getOutlinks() throws IOException {
+	public synchronized MapperInput getOutlinks() throws IOException {
 		// Put check to return null when no more DB entries
-		System.out.println("&&&&&&&&&&&&&&getOutLinks");
 		if(readComplete == false){
-			KeyValueInput keyValueInput = null;
-			if (WorkerServlet.docIterator.hasNext()) {
-				
-				//firsttime through DB
-				ParsedDocument docs = WorkerServlet.docIterator.next();
-				BigInteger docId = docs.getDocID();
-				ArrayList<String> outLinks = docs.getExtractedUrls();
+			MapperInput keyValueInput = null;
+			if(inputFromDb) {
+				if (inputIterator.hasNext()) {
 
-				//List<String> lemmatized = lemmatize(content.toLowerCase());
-				keyValueInput = new KeyValueInput(String.valueOf(docId), outLinks);
-				return keyValueInput;
-				
-				
-				//code for subsequent times
-				
-		}else{
-			readComplete = true;
-			return null;
-		}
-			
+					//firsttime through DB
+					ParsedDocument docs = inputIterator.next();
+					BigInteger docId = docs.getDocID();
+					ArrayList<String> outLinks = docs.getExtractedUrls();
+
+					keyValueInput = new MapperInput(String.valueOf(docId), outLinks);
+					return keyValueInput;
+				}else{
+					readComplete = true;
+					return null;
+				}
+			} else { //read from files
+				String line = inputReader.readLine();
+				if(line==null) {
+					readComplete = true;
+					return null;
+				} else {
+					String keyValue[] = line.split("\t");
+					String[] values = keyValue[1].split(" ");
+					List<String> outLinks = new ArrayList<String>(Arrays.asList(values));
+					keyValueInput = new MapperInput(keyValue[0], outLinks);
+					return keyValueInput;
+				}
+			}
 		}else{
 			return null;
 		}
@@ -211,6 +222,17 @@ public class FileManagement {
 		for (PrintWriter pw : printWritersSpoolOut) {
 			if (pw != null)
 				pw.close();
+		}
+		
+		//closing DB
+		if(inputFromDb) {
+			if(cursor!=null) {
+				txn.commit();
+				txn = null;
+				cursor.close();
+			}
+			if(wrapper!=null)
+				wrapper.exit();
 		}
 	}
 
@@ -238,7 +260,6 @@ public class FileManagement {
 	 * Method to write to a spool in file
 	 */
 	public void writeToSpoolIn(BufferedReader br) {
-		System.out.println("In FileManagement:writeToSpoolIn: start");
 		spoolInCounter++; // counter to keep track of which file is being
 							// written
 		String name = "temp" + spoolInCounter;
@@ -257,9 +278,6 @@ public class FileManagement {
 				pw.println(line);
 			}
 			pw.close();
-			System.out
-					.println("In FileManagement:writeToSpoolIn: successfully wrote to: "
-							+ name);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -277,11 +295,9 @@ public class FileManagement {
 	 * phase starts
 	 */
 	public void setModeReduce(String outputDirName) throws InterruptedException {
-		System.out.println("SPOOL IN DIR NAME--- "+spoolInDirName);
 		spoolInDir = new File(spoolInDirName);
 		listFiles = spoolInDir.list();
 		if (listFiles.length == 0) {
-			System.out.println("Got nothing in spool in");
 			return;
 		}
 		StringBuffer commandCreateBuffer = new StringBuffer("sort"); // create
@@ -293,10 +309,7 @@ public class FileManagement {
 			commandCreateBuffer.append(" " + spoolInDirName + "/" + file);
 		}
 		String command = commandCreateBuffer.toString();
-		System.out.println("COMMAND --- "+ command);
 		try {
-			//Process sortProcess = Runtime.getRuntime().exec(command); // execute
-			System.out.println("AFTER SORT");
 			List<String> cm = new ArrayList<String>();
 			cm.add("sh");
 			cm.add("-c");
@@ -326,24 +339,11 @@ public class FileManagement {
 				}
 			}
 			//sortProcess.waitFor(); // wait for completion
-			System.out.println("AFTER WAIT");
 			File temp = new File(spoolInDirName+"/sorted");
-			if(temp.exists()){
-				System.out.println("THIS IS STRANGE");
-			}
-			//String fil = "/Users/Adi/Documents/workspace/Indexer/storage/spoolIn/sorted";
-			//sortResultReader = new BufferedReader(new InputStreamReader(new FileInputStream(new File(fil))));
-			//Thread.sleep(3000);
 			sortResultReader = new BufferedReader(new InputStreamReader(new FileInputStream(new File(spoolInDirName+"/sorted"))));
-			//System.out.println("THIS IS IT:"+sortResultReader.readLine());// get inputstream object
-			System.out.println("AFTER LIFE");
-			// create output folder
-			System.out.println("OUTPUT DIR NAME --- "+outputDirName);
-			//this.outputDirName = storageDir + "/" + outputDirName;
 			String base = storageDir.substring(storageDir.lastIndexOf("/")+1);
 			base = storageDir.replace(base, "");
 			this.outputDirName = base+"/"+outputDirName;
-			System.out.println(outputDirName);
 			outputDirFile = new File(this.outputDirName);
 			if (outputDirFile.exists()) {
 				removeDirectoryWithContents(outputDirFile);
@@ -356,9 +356,6 @@ public class FileManagement {
 																	// output
 																	// folder
 		} catch (IOException e) {
-			System.out
-					.println("FileManagement: Exception in settng spool in mode: "
-							+ e.getMessage());
 			e.printStackTrace();
 		}
 	}
@@ -373,13 +370,11 @@ public class FileManagement {
 											// associated value exists)
 
 	public KeyValuesInput getReduceLine() {
-		System.out.println("GetReduce");
 		KeyValuesInput keyValuesInput = null;
 		if (previousReduceLine == null)
 			return null;
 		if (!previousReduceLine.isEmpty()) {
 			String parts[] = previousReduceLine.split("\t");
-			System.out.println("PARTS -- "+parts);
 			keyValuesInput = new KeyValuesInput(parts[0].trim(),
 					parts[1].trim()); // initialize key value pair
 		}
@@ -387,7 +382,6 @@ public class FileManagement {
 			String line = null;
 			while (true) {
 				line = sortResultReader.readLine(); // read line
-				System.out.println("LINE -- "+line);
 				if (line == null) {
 					previousReduceLine = null; // when there's no more input to
 												// read
@@ -413,12 +407,10 @@ public class FileManagement {
 				// finally the part where we append the given value (if mating
 				// last considered key), this is done to get an array of values
 				String parts[] = line.split("\t");
-				System.out.println(parts);
 				keyValuesInput.addValue(parts[1].trim());
 			}
 		} catch (IOException e) {
-			System.out.println("EXCEPTION FileManagement:getReduceLine: "
-					+ e.getMessage());
+			e.printStackTrace();
 		}
 		return keyValuesInput;
 	}
@@ -437,12 +429,22 @@ public class FileManagement {
 			listDocIds.add(new BigInteger(entry.getKey()));
 
 		}
-		System.out.println(key+"--"+listDocIds+"---"+ranks);
-		/*WordIndexEntity entity = new WordIndexEntity();
-		entity.setWord(key);
-		entity.setDocIds(listDocIds);
-		entity.setRank(ranks);
-		WorkerServlet.wrapperOutput.indexKey.put(entity);*/
+	}
+	
+	/*
+	 * Method for emergency death
+	 */
+	public void closeEverythingAndDie() throws IOException {	
+		for(PrintWriter pw : printWritersSpoolOut) {
+			if(pw!=null)
+				pw.close();
+		}
+		if(inputReader!=null)
+			inputReader.close();
+		if(cursor!=null)
+			cursor.close();
+		if(wrapper!=null)
+			wrapper.exit();
 	}
 
 	/*

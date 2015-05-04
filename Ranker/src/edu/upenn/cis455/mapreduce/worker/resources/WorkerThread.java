@@ -26,26 +26,8 @@ public class WorkerThread implements Context, Runnable{
 		this.mapMode = mapMode;
 	}
 
-	/*public static synchronized void close(){
-		System.out.println(WorkerServlet.cursorClosed);
-		if(WorkerServlet.cursorClosed == false){
-			WorkerServlet.setCursorClose();
-			WorkerServlet.closeCursor();
-			
-		}
-	}
-	
-	public static synchronized void closeOutputDB(){
-		System.out.println("Closing Output DB");
-		if(WorkerServlet.outputDBClosed == false){
-			//WorkerServlet.setCursorClose();
-			WorkerServlet.closeOutputDB();
-			
-		}
-	}*/
 	@Override
 	public void run() {
-		System.out.println("RUN METHOD");
 		Class jobClass = null;
 		try {
 			//instantiate a class
@@ -53,7 +35,7 @@ public class WorkerThread implements Context, Runnable{
 			job = (Job)jobClass.newInstance();
 
 			//continuously fetch line and feed to map or reduce till you get a null
-			KeyValueInput keyValueInput = null;
+			MapperInput keyValueInput = null;
 			KeyValuesInput keyValuesInput = null;
 		
 			if(mapMode) {

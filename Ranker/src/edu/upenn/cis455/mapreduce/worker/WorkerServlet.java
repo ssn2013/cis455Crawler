@@ -1,27 +1,13 @@
 package edu.upenn.cis455.mapreduce.worker;
 
 import java.io.*;
-import java.lang.reflect.Array;
-import java.math.BigInteger;
-import java.net.URL;
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.servlet.*;
 import javax.servlet.http.*;
-
-import storage.LinksDBWrapper;
-
-import com.datformers.storage.ParsedDocument;
-import com.sleepycat.je.Transaction;
-import com.sleepycat.persist.EntityCursor;
-import com.sleepycat.persist.PrimaryIndex;
 
 import edu.upenn.cis455.mapreduce.util.HttpClient;
 import edu.upenn.cis455.mapreduce.util.JobDetails;
@@ -47,36 +33,20 @@ public class WorkerServlet extends HttpServlet {
 	private String masterIPPort;
 	private int port;
 	private String storageDir;
-	private int countOfCompletedWorkers = 0;
+	private int countOfCompletedThreads = 0;
 	private String status = "idle";
 	private WorkerStatusUpdator wk;
 	private Thread wkt;
-
-	// public static LinksDBWrapper wrapper;
-	public static Iterator<ParsedDocument> docIterator;
-	public static EntityCursor<ParsedDocument> pi_cursor;
-	public static Transaction txn;
-
 	public static boolean cursorClosed = false;
 	public static boolean outputDBClosed = false;
-	// public static OutputDBWrapper wrapperOutput = null;
+	
 
 	// Job handling
 	public JobDetails currentJob = null;
 	private JobDetails pastJob = null;
 
-	// Preprocessing
-	ArrayList<String> sinkUrls;
-	ArrayList<String> othersSinkUrls;
-
-	private List<String> threadIPString = new ArrayList<String>();
-	static int countOfSinksReceived = 0;
-	WorkerStatusUpdate workerStatus;
-	static boolean isDBRead = false;
-
 	public void init(ServletConfig servletConfig)
 			throws javax.servlet.ServletException {
-		System.out.println("INIT CALLED");
 		super.init(servletConfig);
 		masterIPPort = servletConfig.getInitParameter("master"); // fetch
 																	// details
@@ -95,248 +65,16 @@ public class WorkerServlet extends HttpServlet {
 						// every 10 seconds
 		wkt = new Thread(wk);
 		wkt.start();
-
-		System.out.println("INIT ENDED");
-
 	}
-
-	// Preprocessing Methods
-
-	public void preProcess() {
-
-		sinkUrls = new ArrayList<String>();
-		LinksDBWrapper wrapper = new LinksDBWrapper(getServletContext()
-				.getInitParameter("BDBstore"));
-		wrapper.configure();
-		PrimaryIndex<BigInteger, ParsedDocument> pi = wrapper.linksKey;
-		EntityCursor<ParsedDocument> pi_cursor = pi.entities();
-		Iterator<ParsedDocument> iter = pi_cursor.iterator();
-		while (iter.hasNext()) {
-			ParsedDocument index = iter.next();
-			ArrayList<String> allUrl = index.getExtractedUrls();
-			for (String url : allUrl) {
-				BigInteger key = SHA1(url);
-				ParsedDocument ent = pi.get(key);
-				if (ent.getExtractedUrls().size() == 0) {
-					sinkUrls.add(url);
-				}
-			}
-		}
-		pi_cursor.close();
-		wrapper.exit();
-
-		isDBRead = true;
-		URL url = null;
-
-		try {
-			for (String ipAddrStr : threadIPString) {
-				HttpClient client = new HttpClient();
-				String urlString = "http://" + ipAddrStr
-						+ "/worker/pushsinkurl";
-				url = new URL(urlString);
-				String content = sinkUrls.toString();
-				System.out.println("All SINK URL's" + content);
-				client.makePostRequest(urlString,
-						Integer.parseInt(ipAddrStr.split(":")[1]),
-						"text/plain", content);
-				System.out.println("PushDataThread:run: Made push requet to: "
-						+ ipAddrStr);
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.out.println("EXCEPTION PushDataThread:run: "
-					+ e.getMessage());
-		}
-	}
-
-	public static BigInteger convertToBigInt(byte[] data) {
-		StringBuffer buf = new StringBuffer();
-		for (int i = 0; i < data.length; i++) {
-			int halfbyte = (data[i] >>> 4) & 0x0F;
-			int two_halfs = 0;
-			do {
-				if ((0 <= halfbyte) && (halfbyte <= 9))
-					buf.append((char) ('0' + halfbyte));
-				else
-					buf.append((char) ('a' + (halfbyte - 10)));
-				halfbyte = data[i] & 0x0F;
-			} while (two_halfs++ < 1);
-		}
-		return new BigInteger(buf.toString(), 16);
-	}
-
-	/*
-	 * 
-	 * This function is used to calculate the SHA1 hash
-	 */
-	public static BigInteger SHA1(String text) {
-		try {
-			MessageDigest md;
-			md = MessageDigest.getInstance("SHA-1");
-
-			byte[] sha1hash = new byte[40];
-			md.update(text.getBytes("iso-8859-1"), 0, text.length());
-			sha1hash = md.digest();
-			// String string=convertToHex(sha1hash);
-			return convertToBigInt(sha1hash);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return null;
-		// return new BigInteger(sha1hash);
-	}
-
-	private synchronized void addToSinkUrl(HttpServletRequest request,
-			HttpServletResponse response) {
-
-		String line = "";
-		BufferedReader br = null;
-		try {
-			br = (BufferedReader) request.getReader();
-			while ((line = br.readLine()) != null) {
-				String[] args = line.split(",");
-				for (String sinks : args) {
-					othersSinkUrls.add(sinks);
-				}
-			}
-
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		countOfCompletedWorkers++;
-	}
-
-	@Override
-	public void doGet(HttpServletRequest request, HttpServletResponse response)
-			throws java.io.IOException {
-		if (request.getPathInfo().contains("preprocess")) {
-			threadIPString = new ArrayList<String>();
-			for (int i = 1;; i++) {
-				String workerValue = request.getParameter("worker" + i);
-				if (workerValue == null)
-					break;
-				threadIPString.add(workerValue);
-			}
-			preProcess();
-		}
-	}
-
-	void writeLinksToFile() {
-
-		File outFileNoSinks = new File(storageDir + "/output");
-		if (outFileNoSinks.exists()) {
-			removeDirectoryWithContents(outFileNoSinks);
-			System.out
-					.println("Successfully removed existing Spool-Out directory");
-		}
-		// create output files in spoolOut
-		outFileNoSinks.mkdir();
-		File f = new File(outFileNoSinks, "linksFile");
-		if (!f.exists()) {
-			try {
-				f.createNewFile();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-
-		List<String> sinkSets = union(sinkUrls, othersSinkUrls);
-		LinksDBWrapper wrapper = new LinksDBWrapper(getServletContext()
-				.getInitParameter("BDBstore"));
-		wrapper.configure();
-		PrimaryIndex<BigInteger, ParsedDocument> pi = wrapper.linksKey;
-		EntityCursor<ParsedDocument> pi_cursor = pi.entities(txn, null);
-		Iterator<ParsedDocument> iter = pi_cursor.iterator();
-		PrintWriter writer = null;
-		try {
-			writer = new PrintWriter(f, "UTF-8");
-		} catch (FileNotFoundException | UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		while (iter.hasNext()) {
-			String strLinks = "";
-			ParsedDocument index = iter.next();
-			BigInteger docId = index.getDocID();
-			ArrayList<String> allUrl = index.getExtractedUrls();
-			if (allUrl.size() != 0) {
-				for (String outLink : allUrl) {
-					if (!sinkSets.contains(outLink)) {
-						BigInteger urlId = SHA1(outLink);
-						strLinks = strLinks + String.valueOf(urlId) + " ";
-					}
-				}
-
-				writer.println(docId + "/t" + strLinks.trim());
-			}
-
-		}
-		writer.close();
-		pi_cursor.close();
-		wrapper.exit();
-
-	}
-
-	private void removeDirectoryWithContents(File f) {
-		if (!f.isDirectory())
-			return;
-		String[] listFiles = f.list(); // list of all files
-		if (listFiles.length == 0)
-			return;
-		for (int i = 0; i < listFiles.length; i++) {
-			File entry = new File(f.getPath(), listFiles[i]);
-			if (entry.isDirectory()) { // if file entry is directory call same
-										// method
-				removeDirectoryWithContents(entry);
-			} else {
-				entry.delete(); // else delete file
-			}
-		}
-		f.delete();
-	}
-
-	public List<String> union(ArrayList<String> list1, ArrayList<String> list2) {
-		Set<String> set = new HashSet<String>();
-
-		set.addAll(list1);
-		set.addAll(list2);
-
-		return new ArrayList<String>(set);
-	}
-
-	// Preprocess Ends
 
 	@Override
 	public void destroy() {
-		System.out.println("DESTROY");
-		WorkerServlet.closeCursor();
 		wkt.stop();
 		for (Thread t : threadPool) {
 			if (t != null)
 				t.interrupt();
 		}
-		// wrapper.exit();
-		System.out.println("I DONT KNOW");
 	}
-
-	public static synchronized void closeOutputDB() {
-		try {
-			outputDBClosed = true;
-			System.out.println("CLOSE OUTPUT DB");
-			// wrapperOutput.exit();
-		} catch (Exception e) {
-			System.out.println("We know this exception -- CLOSE CURSOR");
-		}
-	}
-
-	public static synchronized void setCursorClose() {
-		cursorClosed = true;
-		System.out.println("BOOLEAN VALUE: " + cursorClosed);
-	}
-
 	/*
 	 * doGet of Servlet
 	 * 
@@ -344,6 +82,13 @@ public class WorkerServlet extends HttpServlet {
 	 * javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest
 	 * , javax.servlet.http.HttpServletResponse)
 	 */
+	public void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws java.io.IOException {
+		response.setContentType("text/html");
+		PrintWriter out = response.getWriter();
+		out.println("<html><head><title>Worker</title></head>");
+		out.println("<body>Hi, I am the worker!</body></html>");
+	}
 
 	/*
 	 * doPost of servlet
@@ -352,52 +97,20 @@ public class WorkerServlet extends HttpServlet {
 	 * javax.servlet.http.HttpServlet#doPost(javax.servlet.http.HttpServletRequest
 	 * , javax.servlet.http.HttpServletResponse)
 	 */
-
-	/*
-	 * 
-	 * 
-	 * 
-	 * IndexDBWrapper wrapper = new IndexDBWrapper("/home/aryaa/BackUp/dummy");
-	 * wrapper.configure();
-	 * 
-	 * PrimaryIndex<BigInteger, LinksEntity> pi = wrapper.linksKey;
-	 * EntityCursor<LinksEntity> pi_cursor = pi.entities();
-	 * 
-	 * Iterator<LinksEntity> docIterator = pi_cursor.iterator(); int count = 0;
-	 * 
-	 * while(docIterator.hasNext()){ count = count + 1; LinksEntity index =
-	 * docIterator.next(); System.out.println(index.getDoc() +
-	 * "--"+index.getOutLinks()); } pi_cursor.close(); wrapper.exit();
-	 * System.out.println("Count"+count); (non-Javadoc)
-	 * 
-	 * @see
-	 * javax.servlet.http.HttpServlet#doPost(javax.servlet.http.HttpServletRequest
-	 * , javax.servlet.http.HttpServletResponse)
-	 */
 	@Override
 	public void doPost(HttpServletRequest request, HttpServletResponse response) {
-		System.out.println("WORKER SERVLET --------------- ");
 		System.out.println(request.getPathInfo());
 		if (request.getPathInfo().contains("runmap")) {
-			System.out.println("HIT RUNMAP");
 			status = "mapping";
 			processRunMap(request, response); // redirect to method handing map
 												// calls
 		} else if (request.getPathInfo().contains("runreduce")) {
-			System.out.println("RUN REDUCE");
 			status = "reducing";
 			processRunReduce(request, response); // redirect to method handling
 													// reduce calls
 		} else if (request.getPathInfo().contains("pushdata")) {
-			// System.out.println("PUSH DATA");
+			//System.out.println("PUSH DATA");
 			processPushData(request, response); // redirect to method handling
-												// pushdata calls
-		}
-
-		else if (request.getPathInfo().contains("pushsinkurl")) {
-			// System.out.println("PUSH DATA");
-
-			addToSinkUrl(request, response); // redirect to method handling
 												// pushdata calls
 		}
 	}
@@ -407,7 +120,7 @@ public class WorkerServlet extends HttpServlet {
 	 */
 	private void processPushData(HttpServletRequest request,
 			HttpServletResponse response) {
-
+		
 		try {
 			BufferedReader br = (BufferedReader) request.getReader();
 			String line = null;
@@ -421,58 +134,26 @@ public class WorkerServlet extends HttpServlet {
 	}
 
 	/*
-	 * For DB for mapreduce
-	 */
-
-	public void readContent() {
-
-	}
-
-	public static synchronized void closeCursor() {
-		try {
-			System.out.println("CLOSE CURSOR");
-			txn.commit();
-			txn = null;
-			pi_cursor.close();
-			pi_cursor = null;
-
-			// wrapper.exit();
-		} catch (Exception e) {
-			System.out.println("We know this exception -- CLOSE CURSOR");
-		}
-	}
-
-	/*
 	 * Method to handle /runreduce calls
 	 */
 	private void processRunReduce(HttpServletRequest request,
 			HttpServletResponse response) {
 		String job = request.getParameter("job");
 		String output = request.getParameter("output");
-		System.out.println("Output" + output);
 		int numThreads = Integer.parseInt(request.getParameter("numThreads"));
-
+		
 		if (currentJob.getJob().equals(job)) { // check if reduce is called for
 												// current job
 			currentJob.setNumReduceThreads(numThreads);
 			currentJob.setOutputDir(output);
-			System.out.println("Reached Here!!");
-			System.out.println(output);
 			try {
 				fileManagementObject.setModeReduce(output);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			// System.out.println(currentJob.getOutputDir());
-			countOfCompletedWorkers = 0;
+			countOfCompletedThreads = 0;
 			currentJob.resetKeys();
-			System.out.println("CREATING NEW DB");
-			// wrapperOutput = new
-			// OutputDBWrapper("/home/aryaa/IwsProject/Indexer/database_output");
-			System.out.println("INTERMEDIATE");
-			// wrapperOutput.configure();
-			System.out.println("CREATED NEW DB");
 			// start threads
 			threadPool = new ArrayList<Thread>();
 			for (int i = 0; i < numThreads; i++) {
@@ -490,15 +171,17 @@ public class WorkerServlet extends HttpServlet {
 	 */
 	private void processRunMap(HttpServletRequest request,
 			HttpServletResponse response) {
+		System.out.println("Worker: Run map called");
 		String job = request.getParameter("job");
 		String input = request.getParameter("input");
 		int numThreads = Integer.parseInt(request.getParameter("numThreads"));
 		int numWorkers = Integer.parseInt(request.getParameter("numWorkers"));
+		String databaseIO = request.getParameter("databaseIO").trim();
 		String logline = "\nJOB: " + job + " INPUT: " + input
 				+ " NUM_THREADS: " + numThreads + " NUM_WORKERS: " + numWorkers;
 		JobDetails jobDetails = new JobDetails(job, input, numThreads,
 				numWorkers);
-
+		
 		for (int i = 1;; i++) {
 			String workerValue = request.getParameter("worker" + i);
 			if (workerValue == null)
@@ -506,25 +189,25 @@ public class WorkerServlet extends HttpServlet {
 			logline += " WORKER: " + i + ": " + workerValue;
 			jobDetails.addWorkerDetails(workerValue);
 		}
+		System.out.println("Worker: Before startMapJob: "+logline);
 
-		startMapJob(jobDetails); // Method to handle map job
+		startMapJob(jobDetails, databaseIO); // Method to handle map job
 	}
 
 	/*
 	 * Method takes the given request parameters and starts map job on requested
 	 * number of threads
 	 */
-	private void startMapJob(JobDetails jobDetails) {
-		System.out.println("^^^^^^^^^^^^^^^^^^START MAP JOB");
+	private void startMapJob(JobDetails jobDetails, String databaseIO) {
 		// Create a resource management object
 		currentJob = jobDetails;
-		fileManagementObject = new FileManagement(storageDir,
-				currentJob.getInputDir(), currentJob.getNumWorkers());
+		System.out.println("Worker: Before filemanagement: storageDir: "+storageDir+" input: "+currentJob.getInputDir()+" workers: "+currentJob.getNumWorkers()+" databaseIO:"+databaseIO);
+		fileManagementObject = new FileManagement(storageDir, currentJob.getInputDir(), currentJob.getNumWorkers(), databaseIO);
+		System.out.println("Worker: After filemanagement: storageDir: "+storageDir+" input: "+currentJob.getInputDir()+" workers: "+currentJob.getNumWorkers()+" databaseIO:"+databaseIO);
 
 		// Instantiate a threadpool and run thread
 		threadPool = new ArrayList<Thread>();
 		currentJob.resetKeys();
-		readContent();
 		for (int i = 0; i < currentJob.getNumThreads(); i++) {
 			WorkerThread worker = new WorkerThread(currentJob.getJob(),
 					fileManagementObject, this, true);
@@ -538,8 +221,8 @@ public class WorkerServlet extends HttpServlet {
 	 * Method called by threads on completion of task
 	 */
 	public synchronized void updateCompletion() {
-		countOfCompletedWorkers++;
-		if (countOfCompletedWorkers == currentJob.getNumThreads()) { // check
+		countOfCompletedThreads++;
+		if (countOfCompletedThreads == currentJob.getNumThreads()) { // check
 																		// count
 																		// of
 																		// threads
@@ -554,7 +237,7 @@ public class WorkerServlet extends HttpServlet {
 																		// all
 																		// threads
 																		// finished
-
+			
 			if (status.equals("mapping")) { // on completions of map
 				currentJob.isMapPhase = false;
 				fileManagementObject.closeAllSpoolOut(); // close all references
@@ -570,7 +253,7 @@ public class WorkerServlet extends HttpServlet {
 										// (for keysWritten)
 				// fileManagementObject.closeReduceWriter();
 				currentJob = null;
-				// wrapper.exit();
+				//wrapper.exit();
 			}
 		}
 	}
@@ -667,34 +350,4 @@ public class WorkerServlet extends HttpServlet {
 	public String getState() {
 		return status;
 	}
-}
-
-class WorkerStatusUpdate implements Runnable {
-
-	WorkerServlet worker;
-	Thread currentThread;
-
-	WorkerStatusUpdate(WorkerServlet worker) {
-		this.worker = worker;
-	}
-
-	public void run() {
-		// System.out.println("Run Called");
-		synchronized (this) {
-			this.currentThread = Thread.currentThread();
-		}
-
-		// Equal to numBerOfWorkers
-		while (WorkerServlet.countOfSinksReceived != 4
-				&& !WorkerServlet.isDBRead) {
-			try {
-				Thread.sleep(10 * 1000);
-			} catch (InterruptedException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
-		}
-		worker.writeLinksToFile();
-	}
-
 }

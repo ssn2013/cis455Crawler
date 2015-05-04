@@ -150,7 +150,6 @@ public class HttpClient {
 			addRequestHeader("Content-Length", ""+body.length());
 			String requestString = getRequestHeadersString();
 			requestString += '\n'+body;
-			System.out.println(requestString);
 
 			//Open socket and do read and write
 			Socket socket = new Socket(this.hostName.split(":")[0].trim(), port);

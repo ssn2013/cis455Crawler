@@ -163,6 +163,13 @@ public class XPathCrawler {
 
 			boolean shouldCrawl=crawler.executeTask(); // start the crawler task
 			if(shouldCrawl) {
+			
+			//Kill any existing threads and clear array
+			for (Thread t: XPathCrawler.subThreads) {
+				t.interrupt();
+			}
+			XPathCrawler.subThreads = new ArrayList<Thread>();
+				
 			for (int i = 0; i < NO_OF_THREADS; i++) { // create and executing
 														// threads
 				XPathCrawlerThread thread = new XPathCrawlerThread(crawler);

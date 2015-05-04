@@ -9,6 +9,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 
+import com.datformers.crawler.resources.URLQueue;
 import com.datformers.mapreduce.Job;
 import com.datformers.mapreduce.worker.resources.FileManagement;
 import com.datformers.resources.HttpClient;
@@ -102,7 +103,10 @@ public class WorkerThread implements  Runnable{
 
 		//change state and call it quits
 		out.close();
-		queue.clear();
+		URLQueue q=URLQueue.getInstance();
+		q.clear();
+		
+			
 		//System.out.println("Before writing to update completion: ");
 		parent.updateCompletion();
 

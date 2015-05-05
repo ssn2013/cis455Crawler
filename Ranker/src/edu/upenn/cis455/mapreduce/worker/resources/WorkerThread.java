@@ -49,7 +49,7 @@ public class WorkerThread implements Context, Runnable{
 				
 			} else {
 				while((keyValuesInput = fileManagement.getReduceLine())!=null) {
-					System.out.println("Thread: "+Thread.currentThread().getName()+" MAP Key: "+keyValuesInput.getKey()+" Reduce values");
+					System.out.println("Thread: "+Thread.currentThread().getName()+" REDUCE Key: "+keyValuesInput.getKey()+" Reduce values");
 					parent.updateKeysRead(1); //update count of keys read
 					job.reduce(keyValuesInput.getKey(), keyValuesInput.getValues(), this);
 				}

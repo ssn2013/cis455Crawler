@@ -199,28 +199,35 @@ public class WorkerServlet extends HttpServlet {
 	 * number of threads
 	 */
 	private void startMapJob(JobDetails jobDetails, String databaseIO) {
-		// Create a resource management object
-		currentJob = jobDetails;
-		System.out.println("Worker: Before filemanagement: storageDir: "+storageDir+" input: "+currentJob.getInputDir()+" workers: "+currentJob.getNumWorkers()+" databaseIO:"+databaseIO);
-		fileManagementObject = new FileManagement(storageDir, currentJob.getInputDir(), currentJob.getNumWorkers(), databaseIO);
-		System.out.println("Worker: After filemanagement: storageDir: "+storageDir+" input: "+currentJob.getInputDir()+" workers: "+currentJob.getNumWorkers()+" databaseIO:"+databaseIO);
+		
+		try {
+			currentJob = jobDetails;
+			System.out.println("Worker: Before filemanagement: storageDir: "+storageDir+" input: "+currentJob.getInputDir()+" workers: "+currentJob.getNumWorkers()+" databaseIO:"+databaseIO);
+			fileManagementObject = new FileManagement(storageDir, currentJob.getInputDir(), currentJob.getNumWorkers(), databaseIO);
+			System.out.println("Worker: After filemanagement: storageDir: "+storageDir+" input: "+currentJob.getInputDir()+" workers: "+currentJob.getNumWorkers()+" databaseIO:"+databaseIO);
 
-		// Instantiate a threadpool and run thread
-		threadPool = new ArrayList<Thread>();
-		currentJob.resetKeys();
-		for (int i = 0; i < currentJob.getNumThreads(); i++) {
-			WorkerThread worker = new WorkerThread(currentJob.getJob(),
-					fileManagementObject, this, true);
-			Thread t = new Thread(worker);
-			threadPool.add(t);
-			t.start();
+			// Instantiate a threadpool and run thread
+			threadPool = new ArrayList<Thread>();
+			currentJob.resetKeys();
+			for (int i = 0; i < currentJob.getNumThreads(); i++) {
+				WorkerThread worker = new WorkerThread(currentJob.getJob(),
+						fileManagementObject, this, true);
+				Thread t = new Thread(worker);
+				threadPool.add(t);
+				t.start();
+			}
+		} catch (Exception e) {
+			System.out.println("HELP: "+e.getMessage());
+			e.printStackTrace();
 		}
+		// Create a resource management object
 	}
 
 	/*
 	 * Method called by threads on completion of task
 	 */
 	public synchronized void updateCompletion() {
+		System.out.println("Starting in update completion");
 		countOfCompletedThreads++;
 		if (countOfCompletedThreads == currentJob.getNumThreads()) { // check
 																		// count
@@ -239,15 +246,19 @@ public class WorkerServlet extends HttpServlet {
 																		// finished
 			
 			if (status.equals("mapping")) { // on completions of map
+				System.out.println("Worker: all completed: status: mapping");
 				currentJob.isMapPhase = false;
 				fileManagementObject.closeAllSpoolOut(); // close all references
 															// to spool out
 															// directory files
+				System.out.println("Worker: all completed: status: mapping l2");
 				new Thread(new PushDataThread(currentJob.getWorkerDetails(),
 						this, fileManagementObject)).start(); // run push data
 																// on another
 																// thread
+				System.out.println("Worker: all completed: status: mapping l3");
 			} else if (status.equals("reducing")) { // on completion of reduce
+				System.out.println("Worker: all completed: status: reducing ");
 				status = "idle"; // change status
 				pastJob = currentJob; // past job keeps track of previous job
 										// (for keysWritten)

@@ -55,7 +55,7 @@ public class FileManagement {
 	EntityCursor<ParsedDocument> cursor = null;
 	PrimaryIndex<BigInteger, ParsedDocument> indexDoc = null;
 	Iterator<ParsedDocument> inputIterator = null;
-	Transaction txn = wrapper.myEnv.beginTransaction(null, null);
+	Transaction txn = null;
 
 	public FileManagement() {
 		System.out.println("FileManagement: default constructor called");
@@ -79,6 +79,7 @@ public class FileManagement {
 			wrapper = new DBIndexerWrapper(inputName);
 			wrapper.configure();
 			wrapper.loadIndices();
+			txn = wrapper.myEnv.beginTransaction(null, null);
 			indexDoc = wrapper.getDocumentIndex();
 			cursor = indexDoc.entities(txn, null);
 			inputIterator = cursor.iterator();
@@ -227,9 +228,10 @@ public class FileManagement {
 		//closing DB
 		if(inputFromDb) {
 			if(cursor!=null) {
+				cursor.close();
+				cursor = null;
 				txn.commit();
 				txn = null;
-				cursor.close();
 			}
 			if(wrapper!=null)
 				wrapper.exit();
@@ -341,9 +343,7 @@ public class FileManagement {
 			//sortProcess.waitFor(); // wait for completion
 			File temp = new File(spoolInDirName+"/sorted");
 			sortResultReader = new BufferedReader(new InputStreamReader(new FileInputStream(new File(spoolInDirName+"/sorted"))));
-			String base = storageDir.substring(storageDir.lastIndexOf("/")+1);
-			base = storageDir.replace(base, "");
-			this.outputDirName = base+"/"+outputDirName;
+			this.outputDirName = storageDir+"/"+outputDirName;
 			outputDirFile = new File(this.outputDirName);
 			if (outputDirFile.exists()) {
 				removeDirectoryWithContents(outputDirFile);
@@ -419,16 +419,7 @@ public class FileManagement {
 	 * Method to write output of reduce phase, called by threads.
 	 */
 	public synchronized void writeToOutput(String key, Object value) {
-		List<BigInteger> listDocIds = new ArrayList<BigInteger>();
-		List<Double> ranks = new ArrayList<Double>();
-		// Write to output
-		Map<String, Double> sortedMapAsc = (Map<String, Double>) value;
-		for (java.util.Map.Entry<String, Double> entry : sortedMapAsc
-				.entrySet()) {
-			ranks.add(entry.getValue());
-			listDocIds.add(new BigInteger(entry.getKey()));
-
-		}
+		reduceOutputWriter.write(key+"\t"+(String)value);
 	}
 	
 	/*

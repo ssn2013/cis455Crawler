@@ -33,7 +33,7 @@ public class MasterServlet extends HttpServlet {
 	int countOfIterations = 0;
 	private int totalNoOfIterations = 0;
 
-	private JobDetails presentMapJob; // details of present running job
+	private JobDetails presentMapJob = null; // details of present running job
 	private String job = null;
 	private String inputDB = null;
 	private String outputDB = null;
@@ -270,9 +270,9 @@ public class MasterServlet extends HttpServlet {
 			if (presentMapJob != null) {
 				checkAndRunReduce(job);
 			}
-			if (presentMapJob != null) {
-				checkAndRunNextIteration(job);
-			}
+//			if (presentMapJob != null) {
+//				checkAndRunNextIteration(job);
+//			}
 			
 			// check if relevant threads are waiting and
 			// run reduce

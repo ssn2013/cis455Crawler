@@ -202,9 +202,7 @@ public class WorkerServlet extends HttpServlet {
 		
 		try {
 			currentJob = jobDetails;
-			System.out.println("Worker: Before filemanagement: storageDir: "+storageDir+" input: "+currentJob.getInputDir()+" workers: "+currentJob.getNumWorkers()+" databaseIO:"+databaseIO);
 			fileManagementObject = new FileManagement(storageDir, currentJob.getInputDir(), currentJob.getNumWorkers(), databaseIO);
-			System.out.println("Worker: After filemanagement: storageDir: "+storageDir+" input: "+currentJob.getInputDir()+" workers: "+currentJob.getNumWorkers()+" databaseIO:"+databaseIO);
 
 			// Instantiate a threadpool and run thread
 			threadPool = new ArrayList<Thread>();
@@ -217,7 +215,6 @@ public class WorkerServlet extends HttpServlet {
 				t.start();
 			}
 		} catch (Exception e) {
-			System.out.println("HELP: "+e.getMessage());
 			e.printStackTrace();
 		}
 		// Create a resource management object
@@ -262,7 +259,7 @@ public class WorkerServlet extends HttpServlet {
 				status = "idle"; // change status
 				pastJob = currentJob; // past job keeps track of previous job
 										// (for keysWritten)
-				// fileManagementObject.closeReduceWriter();
+			    fileManagementObject.closeReduceWriter();
 				currentJob = null;
 				//wrapper.exit();
 			}

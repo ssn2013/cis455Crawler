@@ -58,24 +58,18 @@ public class FileManagement {
 	Transaction txn = null;
 
 	public FileManagement() {
-		System.out.println("FileManagement: default constructor called");
 	}
 
 	public FileManagement(String storageDir, String inputDir, int noWorkers, String databaseIO) {
-		System.out.println("l1");
 		this.databaseIO = databaseIO;
 		this.storageDir = storageDir;
-		System.out.println("l2");
 		spoolOutDir = storageDir + "/spoolOut";
 		spoolInDirName = storageDir + "/spoolIn";
 		numWorkers = noWorkers;
-		System.out.println("l3");
 
 		String inputName = this.storageDir+"/"+inputDir;
-		System.out.println("FileManagement: input: "+inputName+" databaseIO: "+databaseIO);
 		//prepare input
 		if(databaseIO!=null && databaseIO.equals("input")) {
-			System.out.println("FileManagement: input is db, loading");
 			wrapper = new DBIndexerWrapper(inputName);
 			wrapper.configure();
 			wrapper.loadIndices();
@@ -85,11 +79,9 @@ public class FileManagement {
 			inputIterator = cursor.iterator();
 			inputFromDb = true;
 		} else if(databaseIO!=null && databaseIO.equals("output")) {
-			System.out.println("FileManagemet: output to DB");
 			outputToDb = true;
 		} else {
 			try {
-				System.out.println("FileManaagement: File input");
 				inputReader = new BufferedReader(new FileReader(new File(inputName)));
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
@@ -99,7 +91,6 @@ public class FileManagement {
 		// create spool directory
 		spoolOutFile = new File(spoolOutDir);
 		if (spoolOutFile.exists()) {
-			System.out.println("FileManagement: Removing existing spoolout");
 			removeDirectoryWithContents(spoolOutFile);
 		}
 		// create output files in spoolOut
@@ -125,7 +116,6 @@ public class FileManagement {
 		// setting up spool in
 		spoolInDir = new File(spoolInDirName);
 		if (spoolInCounter == -1 && spoolInDir.exists()) {
-			System.out.println("FileManagement: Removing exisiting spoolIn");
 			removeDirectoryWithContents(spoolInDir);
 		}
 		spoolInDir.mkdir();
@@ -287,8 +277,8 @@ public class FileManagement {
 
 	// Code entirely dedicated to reduce specific tasks
 	private BufferedReader sortResultReader = null;
-	private String outputDirName;
-	private File outputDirFile;
+	private String outputFileName;
+	private File outputFilePointer;
 	private File reduceOutputFile;
 	private PrintWriter reduceOutputWriter;
 
@@ -343,15 +333,18 @@ public class FileManagement {
 			//sortProcess.waitFor(); // wait for completion
 			File temp = new File(spoolInDirName+"/sorted");
 			sortResultReader = new BufferedReader(new InputStreamReader(new FileInputStream(new File(spoolInDirName+"/sorted"))));
-			this.outputDirName = storageDir+"/"+outputDirName;
-			outputDirFile = new File(this.outputDirName);
-			if (outputDirFile.exists()) {
-				removeDirectoryWithContents(outputDirFile);
+			this.outputFileName = storageDir+"/"+outputDirName;
+			outputFilePointer = new File(this.outputFileName);
+			if (outputFilePointer.exists()) {
+				outputFilePointer.delete();
+				outputFilePointer = new File(this.outputFileName);
+//				removeDirectoryWithContents(outputFilePointer);
 			}
-			outputDirFile.mkdir();
-			reduceOutputFile = new File(outputDirFile, "output");
-			reduceOutputFile.createNewFile();
-			reduceOutputWriter = new PrintWriter(reduceOutputFile); // attach a
+//			outputDirFile.mkdir();
+//			reduceOutputFile = new File(outputDirFile, "output");
+//			reduceOutputFile.createNewFile();
+			outputFilePointer.createNewFile();
+			reduceOutputWriter = new PrintWriter(new FileWriter(outputFilePointer)); // attach a
 																	// reader to
 																	// output
 																	// folder
@@ -419,7 +412,8 @@ public class FileManagement {
 	 * Method to write output of reduce phase, called by threads.
 	 */
 	public synchronized void writeToOutput(String key, Object value) {
-		reduceOutputWriter.write(key+"\t"+(String)value);
+		
+		reduceOutputWriter.println(key+"\t"+(String)value);
 	}
 	
 	/*

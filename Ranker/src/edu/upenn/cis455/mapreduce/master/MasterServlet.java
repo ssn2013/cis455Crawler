@@ -77,7 +77,6 @@ public class MasterServlet extends HttpServlet {
 		int noMapThreads = numMapThreads;
 		int noReduceThreads = numReduceThreads;
 		JobDetails requestJob = new JobDetails();
-		countOfIterations = 0;
 		System.out.println("Master: Starting page rank");
 		switch (countOfIterations) {
 		case 0:
@@ -89,7 +88,7 @@ public class MasterServlet extends HttpServlet {
 			break;
 
 		case 1:
-
+			System.out.println("Master: case 1");
 			String job = "edu.upenn.cis455.mapreduce.job.RemoveSinks";
 			className = job;
 			inputDir = "output0";
@@ -129,7 +128,7 @@ public class MasterServlet extends HttpServlet {
 				availableWorkers.add(key);
 				dataToSend.append("&worker" + i + "=" + key);
 				i++;
-				System.out.println("Master: adding to available worker: "+key);
+				//System.out.println("Master: adding to available worker: "+key);
 			}
 		}
 		requestJob.setNumWorkers(availableWorkers.size()); // keep track of
@@ -142,7 +141,7 @@ public class MasterServlet extends HttpServlet {
 		for (String key : availableWorkers) {
 			String urlString = "http://" + key.trim() + "/worker/runmap";
 			HttpClient httpClient = new HttpClient();
-			System.out.println("Master: making post request to URL: "+urlString+" Data: "+data);
+			//System.out.println("Master: making post request to URL: "+urlString+" Data: "+data);
 			InputStream responseBody = httpClient.makePostRequest(urlString,
 					Integer.parseInt(key.split(":")[1].trim()),
 					"application/x-www-form-urlencoded", data);
@@ -270,9 +269,10 @@ public class MasterServlet extends HttpServlet {
 			if (presentMapJob != null) {
 				checkAndRunReduce(job);
 			}
-//			if (presentMapJob != null) {
-//				checkAndRunNextIteration(job);
-//			}
+			System.out.println("SHOULD I CALL NEXT ITERATION?");
+			if (presentMapJob != null) {
+				checkAndRunNextIteration(job);
+			}
 			
 			// check if relevant threads are waiting and
 			// run reduce
@@ -296,15 +296,16 @@ public class MasterServlet extends HttpServlet {
 		for (String key : workerStatusMaps.keySet()) { // for the given job,
 			// the waiting workers
 			WorkerStatusMap map = workerStatusMaps.get(key);
-			if (map.getJob().equals(jobName)
-					&& map.getStatus().equals("idle"))
+			if (map.getJob().equals(jobName) && map.getStatus().equals("idle"))
 				count++;
 		}
-		
+		System.out.println(" NUMWORKERS:" + presentMapJob.getNumWorkers() +" count:"+count);
 		if(count == presentMapJob.getNumWorkers()) {
 			countOfIterations++;
-			if(countOfIterations>totalNoOfIterations)
+			if(countOfIterations>totalNoOfIterations){
+				presentMapJob = null;
 				return;
+			}
 			startPageRank();
 		}
 	}

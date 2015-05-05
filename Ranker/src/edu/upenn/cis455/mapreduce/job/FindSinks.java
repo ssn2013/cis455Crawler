@@ -36,7 +36,7 @@ public class FindSinks implements Job{
 					
 				}
 				else{
-					System.out.println(items+" "+key);
+					System.out.println("Tadaaaaaaaaaaaaaaaaaaaaa"+items+" "+key);
 					context.write(items, key);
 					
 				}

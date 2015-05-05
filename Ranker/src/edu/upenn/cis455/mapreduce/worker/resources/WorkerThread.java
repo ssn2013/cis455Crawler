@@ -40,7 +40,6 @@ public class WorkerThread implements Context, Runnable{
 		
 			if(mapMode) {
 				while((keyValueInput = fileManagement.getOutlinks())!=null) {
-					System.out.println("Thread: "+Thread.currentThread().getName()+" MAP Key: "+keyValueInput.getKey()+" Value: "+keyValueInput.getValue());
 					parent.updateKeysRead(1); //update count of keys read
 					List<String> content = keyValueInput.getValue();
 					job.map(keyValueInput.getKey(), content, this);
@@ -49,7 +48,6 @@ public class WorkerThread implements Context, Runnable{
 				
 			} else {
 				while((keyValuesInput = fileManagement.getReduceLine())!=null) {
-					System.out.println("Thread: "+Thread.currentThread().getName()+" REDUCE Key: "+keyValuesInput.getKey()+" Reduce values");
 					parent.updateKeysRead(1); //update count of keys read
 					job.reduce(keyValuesInput.getKey(), keyValuesInput.getValues(), this);
 				}

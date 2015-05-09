@@ -84,10 +84,14 @@ public class WorkerServlet extends HttpServlet {
 	 */
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws java.io.IOException {
-		response.setContentType("text/html");
-		PrintWriter out = response.getWriter();
-		out.println("<html><head><title>Worker</title></head>");
-		out.println("<body>Hi, I am the worker!</body></html>");
+		if(request.getPathInfo()!=null && request.getPathInfo().contains("writeToMe")) {
+			System.out.println("Worker received writeToMe");
+		} else {
+			response.setContentType("text/html");
+			PrintWriter out = response.getWriter();
+			out.println("<html><head><title>Worker</title></head>");
+			out.println("<body>Hi, I am the worker!</body></html>");
+		}
 	}
 
 	/*
@@ -153,6 +157,9 @@ public class WorkerServlet extends HttpServlet {
 			countOfCompletedThreads = 0;
 			currentJob.resetKeys();
 			// start threads
+			
+			System.out.println("Worker Starting reduce: "+currentJob.getJob());
+			
 			threadPool = new ArrayList<Thread>();
 			for (int i = 0; i < numThreads; i++) {
 				WorkerThread wt = new WorkerThread(job, fileManagementObject,
@@ -194,6 +201,8 @@ public class WorkerServlet extends HttpServlet {
 	 * number of threads
 	 */
 	private void startMapJob(JobDetails jobDetails, String databaseIO) {
+		
+		System.out.println("Worker: Starting map: "+jobDetails.getJob());
 		
 		try {
 			currentJob = jobDetails;

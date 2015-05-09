@@ -100,6 +100,7 @@ public class MasterServlet extends HttpServlet {
 //				outputDir = outputDB;
 //				databaseIO = "output";	
 //			} else {
+				System.out.println("Master: Staring iteration: "+countOfIterations);
 				className = "edu.upenn.cis455.mapreduce.job.Ranker";
 				inputDir = "output" + (countOfIterations - 1);
 				outputDir = "output" + countOfIterations;
@@ -295,11 +296,34 @@ public class MasterServlet extends HttpServlet {
 		}
 		if(count == presentMapJob.getNumWorkers()) {
 			countOfIterations++;
-			if(countOfIterations>totalNoOfIterations){
-				presentMapJob = null;
-				return;
+			System.out.println("count"+countOfIterations+"Total:" + totalNoOfIterations);
+			if(countOfIterations>=totalNoOfIterations+2){
+				if(countOfIterations==(totalNoOfIterations+1)) {
+					String fileName = "output"+(countOfIterations-1);
+					makeWriteToMeRequest(fileName);
+				} else {
+					presentMapJob = null;
+					return;
+				}
 			}
 			startPageRank();
+		}
+	}
+
+	private void makeWriteToMeRequest(String fileName) {
+		
+		System.out.println("Please Write to Me!!");
+		for(String key: workerStatusMaps.keySet()) {
+			WorkerStatusMap map = workerStatusMaps.get(key);
+			if(map.getJob().equals(presentMapJob.getJob())) {
+				HttpClient client = new HttpClient();
+				String url = "http://" + key + "/worker/writeToMe";
+				int port = Integer.parseInt(key.split(":")[1].trim());
+				System.out.println("Master making request");
+				Map<String, String> params = new HashMap<String, String>();
+				params.put("file", fileName);
+				client.makeRequest(url, port , new HashMap<String, String>());
+			}
 		}
 	}
 

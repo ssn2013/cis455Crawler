@@ -29,7 +29,7 @@ public class PushDataThread implements Runnable{
 	
 	@Override
 	public void run() {
-		System.out.println("PushDataThread:run: start");
+//		System.out.println("PushDataThread:run: start");
 		int index = 0;
 		URL url;
 		try {
@@ -43,7 +43,7 @@ public class PushDataThread implements Runnable{
 				System.out.println("PushDataThread:run: Made push requet to: "+ipAddrStr);
 				index++;
 			}	
-			System.out.println("PushDataThread:run: updating Parent");
+//			System.out.println("PushDataThread:run: updating Parent");
 			parent.updateStatusWaiting();
 		} catch (IOException e) {
 			e.printStackTrace();

@@ -16,7 +16,7 @@
          </init-param>
          <init-param>
 			<param-name>iterations</param-name>
-			<param-value>0</param-value>
+			<param-value>1</param-value>
          </init-param>
      </servlet>
     

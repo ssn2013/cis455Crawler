@@ -18,9 +18,7 @@ public class FindSinks implements Job{
 			context.write(key, "parent");
 			for (String items : value) {
 				BigInteger docId = SHA1(items);
-				System.out.println("" + docId+"\tchild");
 				context.write("" + docId, "child");
-				System.out.println("" + docId+"\t"+key);
 				context.write("" + docId, key);
 			}
 		}
@@ -31,20 +29,33 @@ public class FindSinks implements Job{
 
 		List<String> array = Arrays.asList(values);
 		if (array.contains("child") && array.contains("parent")) {
-			for(String items:values){
+			Set<String> nonDuplicateArray = new HashSet<>(array);
+			
+			StringBuffer buf = new StringBuffer("SUCCEEDED GUY:- KEY: "+key+" VALS: ");
+			for(String val: nonDuplicateArray) {
+				buf.append(" "+val);
+			}
+			System.out.println(buf.toString());
+			
+			for(String items:nonDuplicateArray){
 				if(items.equals("child") || items.equals("parent")){
 					
 				}
 				else{
-					System.out.println("Tadaaaaaaaaaaaaaaaaaaaaa"+items+" "+key);
 					context.write(items, key);
 					
 				}
 						
 			}
-			
 		}
-		
+		else {
+			StringBuffer buf = new StringBuffer("FAILED GUY:- KEY: "+key+" VALS: ");
+			Set<String> nonDuplicateArray = new HashSet<>(array);
+			for(String val: nonDuplicateArray) {
+				buf.append(" "+val);
+			}
+			System.out.println(buf.toString());
+		}
 
 	}
 

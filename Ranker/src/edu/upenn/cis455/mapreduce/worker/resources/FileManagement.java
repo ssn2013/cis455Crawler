@@ -44,7 +44,7 @@ public class FileManagement {
 	private List<PrintWriter> printWritersSpoolOut = new ArrayList<PrintWriter>();
 	private int spoolInCounter = -1;
 	private String listFiles[];
-	public static boolean readComplete = false;
+	public  boolean readComplete = false;
 	private String databaseIO;
 	
 	//Stuff for handling input
@@ -56,7 +56,7 @@ public class FileManagement {
 	PrimaryIndex<BigInteger, ParsedDocument> indexDoc = null;
 	Iterator<ParsedDocument> inputIterator = null;
 	Transaction txn = null;
-
+	
 	public FileManagement() {
 	}
 
@@ -78,6 +78,7 @@ public class FileManagement {
 			cursor = indexDoc.entities(txn, null);
 			inputIterator = cursor.iterator();
 			inputFromDb = true;
+			
 		} else if(databaseIO!=null && databaseIO.equals("output")) {
 			outputToDb = true;
 		} else {
@@ -148,6 +149,7 @@ public class FileManagement {
 	 */
 	public synchronized void writeToSpoolOut(String key, String value) {
 		try {
+			
 			MessageDigest md = MessageDigest.getInstance("SHA-1");
 			md.update(key.getBytes());
 			byte[] converted = md.digest(); // get hash
@@ -170,6 +172,7 @@ public class FileManagement {
 	 */
 	public synchronized MapperInput getOutlinks() throws IOException {
 		// Put check to return null when no more DB entries
+		
 		if(readComplete == false){
 			MapperInput keyValueInput = null;
 			if(inputFromDb) {
@@ -188,6 +191,7 @@ public class FileManagement {
 				}
 			} else { //read from files
 				String line = inputReader.readLine();
+				System.out.println("FM read input line; "+line);
 				if(line==null) {
 					readComplete = true;
 					return null;
@@ -316,20 +320,34 @@ public class FileManagement {
 			}
 			
 			
-			for(String file: listFiles){
-				List<String> cmd = new ArrayList<String>();
-				cmd.add("sh");
-				cmd.add("-c");
-				cmd.add("sort "+spoolInDirName + "/" + file+ ">> "+spoolInDirName+"/sorted");
+//			for(String file: listFiles){
+//				List<String> cmd = new ArrayList<String>();
+//				cmd.add("sh");
+//				cmd.add("-c");
+//				cmd.add("sort "+spoolInDirName + "/" + file+ ">> "+spoolInDirName+"/sorted");
+//
+//				ProcessBuilder pb = new ProcessBuilder(cmd);
+//				try {
+//					Process p = pb.start();
+//					p.waitFor();
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//				}
+//			}
+			
+			List<String> cmd = new ArrayList<String>();
+			cmd.add("sh");
+			cmd.add("-c");
+			cmd.add(command+ " > "+spoolInDirName+"/sorted");
 
-				ProcessBuilder pb = new ProcessBuilder(cmd);
-				try {
-					Process p = pb.start();
-					p.waitFor();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+			ProcessBuilder pb = new ProcessBuilder(cmd);
+			try {
+				Process p = pb.start();
+				p.waitFor();
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
+			
 			//sortProcess.waitFor(); // wait for completion
 			File temp = new File(spoolInDirName+"/sorted");
 			sortResultReader = new BufferedReader(new InputStreamReader(new FileInputStream(new File(spoolInDirName+"/sorted"))));
@@ -382,7 +400,8 @@ public class FileManagement {
 				}
 				if (keyValuesInput == null) { // in the first case where
 												// previousReduceLine won't have
-												// the previous line
+								
+					// the previous line
 					String parts[] = line.split("\t");
 					keyValuesInput = new KeyValuesInput(parts[0].trim(),
 							parts[1].trim());

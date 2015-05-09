@@ -48,7 +48,8 @@ public class MasterServlet extends HttpServlet {
 		this.inputDB = servletConfig.getInitParameter("InputDB"); //fetch details of storage directory
 		this.outputDB = servletConfig.getInitParameter("OutputDB");
 		int iterations  = Integer.parseInt(servletConfig.getInitParameter("iterations"));
-		this.totalNoOfIterations = iterations+1;
+		//this.totalNoOfIterations = iterations + 1;
+		this.totalNoOfIterations = 0;
 	}
 
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -77,10 +78,8 @@ public class MasterServlet extends HttpServlet {
 		int noMapThreads = numMapThreads;
 		int noReduceThreads = numReduceThreads;
 		JobDetails requestJob = new JobDetails();
-		System.out.println("Master: Starting page rank");
 		switch (countOfIterations) {
 		case 0:
-			System.out.println("Master: case 0");
 			className = "edu.upenn.cis455.mapreduce.job.FindSinks";
 			inputDir = inputDB;
 			outputDir = "output0";
@@ -88,7 +87,6 @@ public class MasterServlet extends HttpServlet {
 			break;
 
 		case 1:
-			System.out.println("Master: case 1");
 			String job = "edu.upenn.cis455.mapreduce.job.RemoveSinks";
 			className = job;
 			inputDir = "output0";
@@ -128,7 +126,6 @@ public class MasterServlet extends HttpServlet {
 				availableWorkers.add(key);
 				dataToSend.append("&worker" + i + "=" + key);
 				i++;
-				//System.out.println("Master: adding to available worker: "+key);
 			}
 		}
 		requestJob.setNumWorkers(availableWorkers.size()); // keep track of
@@ -141,7 +138,6 @@ public class MasterServlet extends HttpServlet {
 		for (String key : availableWorkers) {
 			String urlString = "http://" + key.trim() + "/worker/runmap";
 			HttpClient httpClient = new HttpClient();
-			//System.out.println("Master: making post request to URL: "+urlString+" Data: "+data);
 			InputStream responseBody = httpClient.makePostRequest(urlString,
 					Integer.parseInt(key.split(":")[1].trim()),
 					"application/x-www-form-urlencoded", data);
@@ -251,25 +247,24 @@ public class MasterServlet extends HttpServlet {
 //				}
 //			}
 
-			System.out.println("WORKER UPDATE:- Port: "
-					+ port
-					+ " Status: "
-					+ status
-					+ " Job: "
-					+ job
-					+ " keysRead: "
-					+ keysRead
-					+ " keysWritten: "
-					+ keysWritten
-					+ " ipAddress: "
-					+ ipAddress
-					+ " Put into map: "
-					+ workerStatusMaps.get(workerStatusMap.getIPPort())
-					.getJob());
+//			System.out.println("WORKER UPDATE:- Port: "
+//					+ port
+//					+ " Status: "
+//					+ status
+//					+ " Job: "
+//					+ job
+//					+ " keysRead: "
+//					+ keysRead
+//					+ " keysWritten: "
+//					+ keysWritten
+//					+ " ipAddress: "
+//					+ ipAddress
+//					+ " Put into map: "
+//					+ workerStatusMaps.get(workerStatusMap.getIPPort())
+//					.getJob());
 			if (presentMapJob != null) {
 				checkAndRunReduce(job);
 			}
-			System.out.println("SHOULD I CALL NEXT ITERATION?");
 			if (presentMapJob != null) {
 				checkAndRunNextIteration(job);
 			}
@@ -292,14 +287,12 @@ public class MasterServlet extends HttpServlet {
 
 	private void checkAndRunNextIteration(String jobName) {
 		int count = 0;
-
 		for (String key : workerStatusMaps.keySet()) { // for the given job,
 			// the waiting workers
 			WorkerStatusMap map = workerStatusMaps.get(key);
 			if (map.getJob().equals(jobName) && map.getStatus().equals("idle"))
 				count++;
 		}
-		System.out.println(" NUMWORKERS:" + presentMapJob.getNumWorkers() +" count:"+count);
 		if(count == presentMapJob.getNumWorkers()) {
 			countOfIterations++;
 			if(countOfIterations>totalNoOfIterations){

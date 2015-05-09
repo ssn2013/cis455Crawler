@@ -99,7 +99,6 @@ public class WorkerServlet extends HttpServlet {
 	 */
 	@Override
 	public void doPost(HttpServletRequest request, HttpServletResponse response) {
-		System.out.println(request.getPathInfo());
 		if (request.getPathInfo().contains("runmap")) {
 			status = "mapping";
 			processRunMap(request, response); // redirect to method handing map
@@ -109,7 +108,6 @@ public class WorkerServlet extends HttpServlet {
 			processRunReduce(request, response); // redirect to method handling
 													// reduce calls
 		} else if (request.getPathInfo().contains("pushdata")) {
-			//System.out.println("PUSH DATA");
 			processPushData(request, response); // redirect to method handling
 												// pushdata calls
 		}
@@ -171,7 +169,6 @@ public class WorkerServlet extends HttpServlet {
 	 */
 	private void processRunMap(HttpServletRequest request,
 			HttpServletResponse response) {
-		System.out.println("Worker: Run map called");
 		String job = request.getParameter("job");
 		String input = request.getParameter("input");
 		int numThreads = Integer.parseInt(request.getParameter("numThreads"));
@@ -189,8 +186,6 @@ public class WorkerServlet extends HttpServlet {
 			logline += " WORKER: " + i + ": " + workerValue;
 			jobDetails.addWorkerDetails(workerValue);
 		}
-		System.out.println("Worker: Before startMapJob: "+logline);
-
 		startMapJob(jobDetails, databaseIO); // Method to handle map job
 	}
 
@@ -207,6 +202,7 @@ public class WorkerServlet extends HttpServlet {
 			// Instantiate a threadpool and run thread
 			threadPool = new ArrayList<Thread>();
 			currentJob.resetKeys();
+			countOfCompletedThreads = 0;
 			for (int i = 0; i < currentJob.getNumThreads(); i++) {
 				WorkerThread worker = new WorkerThread(currentJob.getJob(),
 						fileManagementObject, this, true);
@@ -224,7 +220,6 @@ public class WorkerServlet extends HttpServlet {
 	 * Method called by threads on completion of task
 	 */
 	public synchronized void updateCompletion() {
-		System.out.println("Starting in update completion");
 		countOfCompletedThreads++;
 		if (countOfCompletedThreads == currentJob.getNumThreads()) { // check
 																		// count
@@ -243,19 +238,15 @@ public class WorkerServlet extends HttpServlet {
 																		// finished
 			
 			if (status.equals("mapping")) { // on completions of map
-				System.out.println("Worker: all completed: status: mapping");
 				currentJob.isMapPhase = false;
 				fileManagementObject.closeAllSpoolOut(); // close all references
 															// to spool out
 															// directory files
-				System.out.println("Worker: all completed: status: mapping l2");
 				new Thread(new PushDataThread(currentJob.getWorkerDetails(),
 						this, fileManagementObject)).start(); // run push data
 																// on another
 																// thread
-				System.out.println("Worker: all completed: status: mapping l3");
 			} else if (status.equals("reducing")) { // on completion of reduce
-				System.out.println("Worker: all completed: status: reducing ");
 				status = "idle"; // change status
 				pastJob = currentJob; // past job keeps track of previous job
 										// (for keysWritten)

@@ -30,6 +30,7 @@ public class WorkerThread implements Context, Runnable{
 	public void run() {
 		Class jobClass = null;
 		try {
+			
 			//instantiate a class
 			jobClass = Class.forName(className);
 			job = (Job)jobClass.newInstance();
@@ -67,7 +68,7 @@ public class WorkerThread implements Context, Runnable{
 		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException | IOException  e) {
 			e.printStackTrace();
 			//parent.wrapper.exit();
-			System.out.println("ERROR IN WORKER THREAD: "+e.getMessage());
+//			System.out.println("ERROR IN WORKER THREAD: "+e.getMessage());
 		}
 	}
 
@@ -78,7 +79,6 @@ public class WorkerThread implements Context, Runnable{
 	@Override
 	public void write(String key, Object value) {
 		if(mapMode) { //Write goes to different files depending on map or reduce phase
-			//System.out.println("WorkerThread:write called with Key: "+key+" Value: "+value);
 			parent.updateKeyWritten(1);
 			//Write to spool out
 			fileManagement.writeToSpoolOut(key, (String)value);

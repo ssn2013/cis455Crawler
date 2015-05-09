@@ -13,7 +13,6 @@ public class RemoveSinks implements Job{
 
 		for (String items : value) {
 			context.write(key, items);
-			System.out.println(key+"\t"+items);
 		}
 
 	}
@@ -22,10 +21,9 @@ public class RemoveSinks implements Job{
 		
 		String outlinks = "1";
 		for(String items:values){
-			outlinks = outlinks + "\t" + items;
+			outlinks = outlinks + " " + items;
 		}
 		context.write(key,outlinks.trim());
-		System.out.println(key+"\t"+outlinks.trim());
 	}
 
 	public static BigInteger convertToBigInt(byte[] data) {

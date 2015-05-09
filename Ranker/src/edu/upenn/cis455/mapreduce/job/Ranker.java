@@ -36,40 +36,53 @@ public class Ranker implements Job {
 	// Sort the hashmap and get the max frequency value
 	public void map(String key, List<String> value, Context context) {
 
-		float divFactor = value.size() - 1;
+		String line = "Ranker Map Input key: "+key;
+		for(String str: value) {
+			line += " value: "+str;
+		}
+//		System.out.println(line);
+		
+		double divFactor = value.size() - 1;
 		String val = "" + Float.parseFloat(value.get(0)) / divFactor;
 		String original = "";
 		for (int i = 1; i < value.size(); i++) {
 			val = val + " " + key;
+//			System.out.println("Ranker Map writing key: "+value.get(i)+" value: "+val);
 			context.write(value.get(i), val);
 			original = original + " " + value.get(i);
 
 		}
+//		System.out.println("Ranker Map writing: key: "+key+" value: "+original.trim());
 		context.write(key, original.trim());
 
 	}
 
 	public void reduce(String key, String[] values, Context context) {
 
+//		System.out.print("Ranker Reduce input key: "+key+"  ");
+//		for(String str: values) {
+//			System.out.print(" value: "+str);
+//		}
+//		System.out.println();
+		
 		double sum = 0;
 		String outLinks = "";
 		for (int i = 0; i < values.length; i++) {
 			String[] fields = values[i].split(" ");
-			if (fields.length > 2) {
-				for(String links:values){
-					outLinks = outLinks + " " + links;
-				}
-
-			} else {
-
+			if(fields[0].matches("[+-]?\\d*(\\.\\d+)?")){
 				sum = sum + Float.parseFloat(fields[0]);
-
+			}
+			else{
+				//for(String links:values){
+					outLinks = values[i];
+				//}
 			}
 		}
 		
 		double finalRank = (1 - 0.85) + 0.85 * sum;
 		
-		context.write(key, ""+finalRank+outLinks);
+//		System.out.println("Reduce output: key: "+key+" value: "+finalRank+" "+outLinks.trim());
+		context.write(key, ""+finalRank+" "+outLinks.trim());
 	}
 
 }

@@ -43,10 +43,10 @@ public class WorkerStatusUpdator implements Runnable {
 						+ "/master/workerstatus";
 
 				client.makeRequest(urlString, Integer.parseInt(masterPort.trim()), requestParameters);
-				if(client.getResponseCode()==200)
-					System.out.println("WorkerStatusUpdator:run: Successful updation of master at: "+urlString);
-				else 
-					System.out.println("WorkerStatusUpdator:run: SUnsuccessful updation of master at: "+urlString+" returned: "+client.getResponseCode());
+//				if(client.getResponseCode()==200)
+//					System.out.println("WorkerStatusUpdator:run: Successful updation of master at: "+urlString);
+//				else 
+//					System.out.println("WorkerStatusUpdator:run: SUnsuccessful updation of master at: "+urlString+" returned: "+client.getResponseCode());
 
 				// Now Sleep
 				Thread.sleep(10000);

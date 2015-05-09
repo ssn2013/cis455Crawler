@@ -9,15 +9,15 @@
          <servlet-class>edu.upenn.cis455.mapreduce.worker.WorkerServlet</servlet-class>
          <init-param>
            <param-name>storagedir</param-name>
-           <param-value>/home/cis455/storage2/</param-value>
+           <param-value>/home/sruthi/Desktop/theNEWdb/worker2</param-value>
          </init-param>
          <init-param>
            <param-name>master</param-name>
-           <param-value>127.0.0.1:3000</param-value>
+           <param-value>127.0.0.1:8080</param-value>
          </init-param>
          <init-param>
            <param-name>port</param-name>
-           <param-value>3029</param-value>
+           <param-value>4080</param-value>
          </init-param>
      </servlet>
 

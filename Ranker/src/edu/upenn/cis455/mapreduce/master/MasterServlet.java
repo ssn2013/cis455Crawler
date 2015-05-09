@@ -20,7 +20,6 @@ import com.datformers.storage.DocRanksStore;
 import edu.upenn.cis455.mapreduce.master.resources.WorkerStatusMap;
 import edu.upenn.cis455.mapreduce.util.HttpClient;
 import edu.upenn.cis455.mapreduce.util.JobDetails;
-import edu.upenn.cis455.mapreduce.worker.WorkerServlet;
 
 /*
  * Master servlet acting as the master node
@@ -38,6 +37,7 @@ public class MasterServlet extends HttpServlet {
 
 	int countOfIterations = 0;
 	private int totalNoOfIterations = 0;
+	int workerOutputWrittenCount = 0;
 
 	private JobDetails presentMapJob = null; // details of present running job
 	private String job = null;
@@ -45,6 +45,7 @@ public class MasterServlet extends HttpServlet {
 	private String outputDB = null;
 	private int numMapThreads = 10;
 	private int numReduceThreads = 10;
+	private DBRankerWrapper wrapper;
 
 //	HashMap<String, String> prevState = new HashMap<String, String>();
 	
@@ -55,6 +56,7 @@ public class MasterServlet extends HttpServlet {
 		this.outputDB = servletConfig.getInitParameter("OutputDB");
 		int iterations  = Integer.parseInt(servletConfig.getInitParameter("iterations"));
 		this.totalNoOfIterations = iterations + 1;
+		
 		//this.totalNoOfIterations = 3;
 	}
 
@@ -164,7 +166,6 @@ public class MasterServlet extends HttpServlet {
 	public void doPost(HttpServletRequest request, HttpServletResponse response) {
 
 		if (request.getServletPath().contains("writetodb")) {
-			System.out.println("writetodb");
 			writeFinalOutputToDB(request, response);
 		}
 
@@ -172,6 +173,7 @@ public class MasterServlet extends HttpServlet {
 
 	private synchronized void writeFinalOutputToDB(HttpServletRequest request,
 			HttpServletResponse response) {
+		System.out.println("Write to DB called");
 		DocRanksStore entity = new DocRanksStore();
 
 		BufferedReader reader = null;
@@ -182,15 +184,14 @@ public class MasterServlet extends HttpServlet {
 		}
 		String line;
 		try {
-			while ((line = reader.readLine()) != null) {
+			System.out.println("===============" + workerStatusMaps.keySet().size());
+			while (workerOutputWrittenCount != workerStatusMaps.keySet().size() && (line = reader.readLine())!=null) {
+				System.out.println("===============line" + line);
 				if (line.contains("$END")) {
-					workerOutputWrittenCount++;
-					if (workerOutputWrittenCount == presentMapJob.getNumWorkers()) {
-						//wrapper.exit();
-					}
+					workerOutputWrittenCount++;				
 				} else {
-
 					String[] args = line.split(" ");
+					System.out.println("field[0], field[1]:"+ args[0] + ","+ args[1]);
 					BigInteger docId = new BigInteger(args[0]);
 					entity.setDocId(docId);
 					entity.setRank(Double.parseDouble(args[1]));
@@ -348,7 +349,7 @@ public class MasterServlet extends HttpServlet {
 			if(countOfIterations>totalNoOfIterations){
 				if(countOfIterations==(totalNoOfIterations+1)) {
 					String fileName = "output"+(countOfIterations-1);
-					//makeWriteToMeRequest(fileName);
+					makeWriteToMeRequest(fileName);
 					return;
 				} else {
 					presentMapJob = null;
@@ -361,13 +362,13 @@ public class MasterServlet extends HttpServlet {
 
 	private void makeWriteToMeRequest(String fileName) {
 		
-		System.out.println("Please Write to Me!!");
+		//System.out.println("Please Write to Me!!");
 		for(String key: workerStatusMaps.keySet()) {
 			WorkerStatusMap map = workerStatusMaps.get(key);
 			HttpClient client = new HttpClient();
 			String url = "http://" + key + "/worker/writeToMe";
 			int port = Integer.parseInt(key.split(":")[1].trim());
-			System.out.println("Master making request to URL: "+url+" with file: "+fileName);
+			//System.out.println("Master making request to URL: "+url+" with file: "+fileName);
 			Map<String, String> params = new HashMap<String, String>();
 			params.put("file", fileName);
 			client.makeRequest(url, port , params);

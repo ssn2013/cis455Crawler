@@ -113,6 +113,7 @@ public class WorkerServlet extends HttpServlet {
 		while((dataToSend = fileManagementObject.getDataFromFile())!=null) {
 			httpClient.makePostRequest(urlString, port, "text/plain", dataToSend);
 		}
+		httpClient.makePostRequest(urlString, port, "text/plain", "$END\n");
  	}
 
 	/*

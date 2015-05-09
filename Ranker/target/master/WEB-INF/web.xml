@@ -16,7 +16,7 @@
          </init-param>
          <init-param>
 			<param-name>iterations</param-name>
-			<param-value>10</param-value>
+			<param-value>3</param-value>
          </init-param>
      </servlet>
     
@@ -29,6 +29,12 @@
      <servlet-mapping>
          <servlet-name>MasterServlet</servlet-name>
          <url-pattern>/status</url-pattern>
+     </servlet-mapping>
+     
+      
+     <servlet-mapping>
+         <servlet-name>MasterServlet</servlet-name>
+         <url-pattern>/writetodb</url-pattern>
      </servlet-mapping>
      
      <servlet-mapping>

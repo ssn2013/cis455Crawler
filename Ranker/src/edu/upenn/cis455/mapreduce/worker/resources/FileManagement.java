@@ -484,7 +484,7 @@ public class FileManagement {
 				String toSend = bufferForSendingToMaster.toString();
 				if((toSend.getBytes().length + line.getBytes().length)>MAX_ALLOWED_LENGTH) {
 					bufferForSendingToMaster = new StringBuffer(line+'\n');
-					System.out.println("FM: Writing; "+toSend);
+					//System.out.println("FM: Writing; "+toSend);
 					return toSend;
 				}
 				bufferForSendingToMaster.append(line+'\n');

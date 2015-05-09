@@ -1,7 +1,9 @@
 package edu.upenn.cis455.mapreduce.master;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,9 +14,13 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.datformers.storage.DBRankerWrapper;
+import com.datformers.storage.DocRanksStore;
+
 import edu.upenn.cis455.mapreduce.master.resources.WorkerStatusMap;
 import edu.upenn.cis455.mapreduce.util.HttpClient;
 import edu.upenn.cis455.mapreduce.util.JobDetails;
+import edu.upenn.cis455.mapreduce.worker.WorkerServlet;
 
 /*
  * Master servlet acting as the master node
@@ -157,7 +163,49 @@ public class MasterServlet extends HttpServlet {
 	@Override
 	public void doPost(HttpServletRequest request, HttpServletResponse response) {
 
+		if (request.getServletPath().contains("writetodb")) {
+			System.out.println("writetodb");
+			writeFinalOutputToDB(request, response);
+		}
+
 	}
+
+	private synchronized void writeFinalOutputToDB(HttpServletRequest request,
+			HttpServletResponse response) {
+		DocRanksStore entity = new DocRanksStore();
+
+		BufferedReader reader = null;
+		try {
+			reader = request.getReader();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		String line;
+		try {
+			while ((line = reader.readLine()) != null) {
+				if (line.contains("$END")) {
+					workerOutputWrittenCount++;
+					if (workerOutputWrittenCount == presentMapJob.getNumWorkers()) {
+						//wrapper.exit();
+					}
+				} else {
+
+					String[] args = line.split(" ");
+					BigInteger docId = new BigInteger(args[0]);
+					entity.setDocId(docId);
+					entity.setRank(Double.parseDouble(args[1]));
+					//wrapper.pageRankKey.put(entity);
+				}
+
+			}
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+	}
+	
+	
 
 	/*
 	 * Method to handle /status GET request

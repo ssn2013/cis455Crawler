@@ -54,8 +54,8 @@ public class MasterServlet extends HttpServlet {
 		this.inputDB = servletConfig.getInitParameter("InputDB"); //fetch details of storage directory
 		this.outputDB = servletConfig.getInitParameter("OutputDB");
 		int iterations  = Integer.parseInt(servletConfig.getInitParameter("iterations"));
-		this.totalNoOfIterations = iterations + 1;
-		//this.totalNoOfIterations = 3;
+		//this.totalNoOfIterations = iterations + 1;
+		this.totalNoOfIterations = 0;
 	}
 
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -84,6 +84,7 @@ public class MasterServlet extends HttpServlet {
 		int noMapThreads = numMapThreads;
 		int noReduceThreads = numReduceThreads;
 		JobDetails requestJob = new JobDetails();
+		System.out.println("START PAGERANK COUNT: "+countOfIterations);
 		switch (countOfIterations) {
 		case 0:
 			className = "edu.upenn.cis455.mapreduce.job.FindSinks";
@@ -181,27 +182,27 @@ public class MasterServlet extends HttpServlet {
 			e.printStackTrace();
 		}
 		String line;
-		try {
-			while ((line = reader.readLine()) != null) {
-				if (line.contains("$END")) {
-					workerOutputWrittenCount++;
-					if (workerOutputWrittenCount == presentMapJob.getNumWorkers()) {
-						//wrapper.exit();
-					}
-				} else {
-
-					String[] args = line.split(" ");
-					BigInteger docId = new BigInteger(args[0]);
-					entity.setDocId(docId);
-					entity.setRank(Double.parseDouble(args[1]));
-					//wrapper.pageRankKey.put(entity);
-				}
-
-			}
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+//		try {
+//			while ((line = reader.readLine()) != null) {
+//				if (line.contains("$END")) {
+//					workerOutputWrittenCount++;
+//					if (workerOutputWrittenCount == presentMapJob.getNumWorkers()) {
+//						//wrapper.exit();
+//					}
+//				} else {
+//
+//					String[] args = line.split(" ");
+//					BigInteger docId = new BigInteger(args[0]);
+//					entity.setDocId(docId);
+//					entity.setRank(Double.parseDouble(args[1]));
+//					//wrapper.pageRankKey.put(entity);
+//				}
+//
+//			}
+//
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
 
 	}
 	

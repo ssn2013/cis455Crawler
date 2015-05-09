@@ -239,21 +239,39 @@ public class FileManagement {
 	/*
 	 * MEthod to fetch contents of a specified spool out file
 	 */
-	public String getSpoolOutFileContentForWorker(int index) {
+	
+	BufferedReader spoolOutReaderForWorker = null;
+	StringBuffer spoolOutChunkForWorker = new StringBuffer();
+	int PUSH_MAX_ALLOWED_SIZE = 1024;
+	public void setSpoolOutFileReaderForWorker(int index) {
+		String fileName = spoolOutDir + "/worker" + index;
 		try {
-			String fileName = spoolOutDir + "/worker" + index;
-			BufferedReader bf = new BufferedReader(new FileReader(new File(
-					fileName)));
-			StringBuffer buf = new StringBuffer();
-			String line;
-			while ((line = bf.readLine()) != null)
-				// read contents line by line and append to a string
-				buf.append(line + '\n');
-			return buf.toString();
+			spoolOutReaderForWorker = new BufferedReader(new FileReader(new File(fileName)));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
+	public String getSpoolOutChunkForWorker() {
+		String line = null;
+		try {
+			while((line=spoolOutReaderForWorker.readLine())!=null) {
+				String toSend = spoolOutChunkForWorker.toString();
+				if((toSend.getBytes().length+line.getBytes().length)>PUSH_MAX_ALLOWED_SIZE) {
+					spoolOutChunkForWorker = new StringBuffer(line+'\n');
+					return toSend;
+				}
+				spoolOutChunkForWorker.append(line+'\n');
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		return null;
+		if(spoolOutChunkForWorker.length()>0) {
+			String toSend = spoolOutChunkForWorker.toString();
+			spoolOutChunkForWorker = new StringBuffer();
+			return toSend;
+		} else {
+			return null;
+		}
 	}
 
 	/*

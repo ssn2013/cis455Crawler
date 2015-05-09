@@ -37,9 +37,12 @@ public class PushDataThread implements Runnable{
 				HttpClient client = new HttpClient();
 				String urlString = "http://"+ipAddrStr+"/worker/pushdata";
 				url = new URL(urlString);
-				String content = fileManagement.getSpoolOutFileContentForWorker(index);
-				client.makePostRequest(urlString, Integer.parseInt(ipAddrStr.split(":")[1]), "text/plain", content);
-				int successStory = client.getResponseCode();
+				fileManagement.setSpoolOutFileReaderForWorker(index);
+				String dataToSent = null;
+				while((dataToSent = fileManagement.getSpoolOutChunkForWorker())!=null){
+					client.makePostRequest(urlString, Integer.parseInt(ipAddrStr.split(":")[1]), "text/plain", dataToSent);
+					int successStory = client.getResponseCode();
+				}
 				System.out.println("PushDataThread:run: Made push requet to: "+ipAddrStr);
 				index++;
 			}	

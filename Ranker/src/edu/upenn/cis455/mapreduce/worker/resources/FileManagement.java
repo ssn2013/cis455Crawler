@@ -59,6 +59,10 @@ public class FileManagement {
 	
 	public FileManagement() {
 	}
+	
+	public FileManagement(String storageDir) {
+		this.storageDir = storageDir;
+	}
 
 	public FileManagement(String storageDir, String inputDir, int noWorkers, String databaseIO) {
 		this.databaseIO = databaseIO;
@@ -458,5 +462,46 @@ public class FileManagement {
 	 */
 	public void closeReduceWriter() {
 		reduceOutputWriter.close();
+	}
+	
+	
+	BufferedReader fileReaderForSendingToMaster = null;
+	StringBuffer bufferForSendingToMaster = new StringBuffer();
+	double MAX_ALLOWED_LENGTH = (1.9*1024*1024)-3;
+	public void setToMasterReader(String file) {
+		try {
+			fileReaderForSendingToMaster = new BufferedReader(new FileReader(new File(storageDir+"/"+file)));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
+	public String getDataFromFile() {
+		String line = null;
+		if(fileReaderForSendingToMaster==null)
+			System.out.println("EMPTY READER");
+		try {
+			while((line = fileReaderForSendingToMaster.readLine())!=null) {
+				String toSend = bufferForSendingToMaster.toString();
+				if((toSend.getBytes().length + line.getBytes().length)>MAX_ALLOWED_LENGTH) {
+					bufferForSendingToMaster = new StringBuffer(line+'\n');
+					System.out.println("FM: Writing; "+toSend);
+					return toSend;
+				}
+				bufferForSendingToMaster.append(line+'\n');
+			}
+			if(bufferForSendingToMaster.length()==0) {
+				System.out.println("FM: empty buffer");
+				return null;
+			} else {
+				String toSend = bufferForSendingToMaster.toString();
+				System.out.println("FM gonna send: "+toSend);
+				bufferForSendingToMaster = new StringBuffer();
+				return toSend;
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+		
 	}
 }

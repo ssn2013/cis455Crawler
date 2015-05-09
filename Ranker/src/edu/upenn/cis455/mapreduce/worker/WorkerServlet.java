@@ -85,7 +85,10 @@ public class WorkerServlet extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws java.io.IOException {
 		if(request.getPathInfo()!=null && request.getPathInfo().contains("writeToMe")) {
-			System.out.println("Worker received writeToMe");
+			String fileName = request.getParameter("file");
+			System.out.println("Worker received writeToMe with file: "+fileName);
+			response.setStatus(200);
+			writeOutputToMaster(fileName);
 		} else {
 			response.setContentType("text/html");
 			PrintWriter out = response.getWriter();
@@ -93,6 +96,24 @@ public class WorkerServlet extends HttpServlet {
 			out.println("<body>Hi, I am the worker!</body></html>");
 		}
 	}
+
+	private void writeOutputToMaster(String fileName) {
+		if(fileManagementObject==null) {
+			fileManagementObject = new FileManagement(storageDir);
+		}
+		fileManagementObject.setToMasterReader(fileName);
+		
+		String dataToSend = null;
+		HttpClient httpClient  = new HttpClient();
+		
+		//get data
+		String urlString = "http://"+masterIPPort.trim()+"/master/writetodb";
+		System.out.println("Writing to URL: "+urlString);
+		
+		while((dataToSend = fileManagementObject.getDataFromFile())!=null) {
+			httpClient.makePostRequest(urlString, port, "text/plain", dataToSend);
+		}
+ 	}
 
 	/*
 	 * doPost of servlet

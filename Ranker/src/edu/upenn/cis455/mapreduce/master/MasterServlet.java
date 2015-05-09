@@ -60,8 +60,8 @@ public class MasterServlet extends HttpServlet {
 		} else if (request.getServletPath().contains("status")) {
 			processStatusRequest(request, response);
 		} else if (request.getServletPath().contains("pagerank")) {
-			startPageRank();
 			response.setStatus(200);
+			startPageRank();
 		} else {
 			response.getWriter().println("<html><body><p>Hi this is the master node</p></body></html>");
 		}
@@ -297,10 +297,11 @@ public class MasterServlet extends HttpServlet {
 		if(count == presentMapJob.getNumWorkers()) {
 			countOfIterations++;
 			System.out.println("count"+countOfIterations+"Total:" + totalNoOfIterations);
-			if(countOfIterations>=totalNoOfIterations+2){
+			if(countOfIterations>totalNoOfIterations){
 				if(countOfIterations==(totalNoOfIterations+1)) {
 					String fileName = "output"+(countOfIterations-1);
-					makeWriteToMeRequest(fileName);
+					//makeWriteToMeRequest(fileName);
+					return;
 				} else {
 					presentMapJob = null;
 					return;
@@ -315,15 +316,13 @@ public class MasterServlet extends HttpServlet {
 		System.out.println("Please Write to Me!!");
 		for(String key: workerStatusMaps.keySet()) {
 			WorkerStatusMap map = workerStatusMaps.get(key);
-			if(map.getJob().equals(presentMapJob.getJob())) {
-				HttpClient client = new HttpClient();
-				String url = "http://" + key + "/worker/writeToMe";
-				int port = Integer.parseInt(key.split(":")[1].trim());
-				System.out.println("Master making request");
-				Map<String, String> params = new HashMap<String, String>();
-				params.put("file", fileName);
-				client.makeRequest(url, port , new HashMap<String, String>());
-			}
+			HttpClient client = new HttpClient();
+			String url = "http://" + key + "/worker/writeToMe";
+			int port = Integer.parseInt(key.split(":")[1].trim());
+			System.out.println("Master making request to URL: "+url+" with file: "+fileName);
+			Map<String, String> params = new HashMap<String, String>();
+			params.put("file", fileName);
+			client.makeRequest(url, port , params);
 		}
 	}
 

@@ -34,16 +34,19 @@ public class PushDataThread implements Runnable{
 		URL url;
 		try {
 			for(String ipAddrStr: threadIPString) {
-				HttpClient client = new HttpClient();
+				int counter = 0;
 				String urlString = "http://"+ipAddrStr+"/worker/pushdata";
 				url = new URL(urlString);
 				fileManagement.setSpoolOutFileReaderForWorker(index);
 				String dataToSent = null;
 				while((dataToSent = fileManagement.getSpoolOutChunkForWorker())!=null){
+//					System.out.println("Chunked Requesting FROM FILE: "+index+" Making Request: "+urlString);
+					HttpClient client = new HttpClient();
 					client.makePostRequest(urlString, Integer.parseInt(ipAddrStr.split(":")[1]), "text/plain", dataToSent);
 					int successStory = client.getResponseCode();
+					counter++;
 				}
-				System.out.println("PushDataThread:run: Made push requet to: "+ipAddrStr);
+				System.out.println("PushDataThread:run: Made push request to: "+ipAddrStr+" number of times: "+counter);
 				index++;
 			}	
 //			System.out.println("PushDataThread:run: updating Parent");

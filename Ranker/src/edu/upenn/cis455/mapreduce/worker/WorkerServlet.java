@@ -143,7 +143,6 @@ public class WorkerServlet extends HttpServlet {
 	 */
 	private void processPushData(HttpServletRequest request,
 			HttpServletResponse response) {
-		
 		try {
 			BufferedReader br = (BufferedReader) request.getReader();
 			String line = null;

@@ -54,8 +54,8 @@ public class MasterServlet extends HttpServlet {
 		this.inputDB = servletConfig.getInitParameter("InputDB"); //fetch details of storage directory
 		this.outputDB = servletConfig.getInitParameter("OutputDB");
 		int iterations  = Integer.parseInt(servletConfig.getInitParameter("iterations"));
-		//this.totalNoOfIterations = iterations + 1;
-		this.totalNoOfIterations = 0;
+		this.totalNoOfIterations = iterations + 1;
+		//this.totalNoOfIterations = 0;
 	}
 
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -84,7 +84,6 @@ public class MasterServlet extends HttpServlet {
 		int noMapThreads = numMapThreads;
 		int noReduceThreads = numReduceThreads;
 		JobDetails requestJob = new JobDetails();
-		System.out.println("START PAGERANK COUNT: "+countOfIterations);
 		switch (countOfIterations) {
 		case 0:
 			className = "edu.upenn.cis455.mapreduce.job.FindSinks";
@@ -107,7 +106,6 @@ public class MasterServlet extends HttpServlet {
 //				outputDir = outputDB;
 //				databaseIO = "output";	
 //			} else {
-				System.out.println("Master: Staring iteration: "+countOfIterations);
 				className = "edu.upenn.cis455.mapreduce.job.Ranker";
 				inputDir = "output" + (countOfIterations - 1);
 				outputDir = "output" + countOfIterations;

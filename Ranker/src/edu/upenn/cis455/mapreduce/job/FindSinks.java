@@ -31,11 +31,11 @@ public class FindSinks implements Job{
 		if (array.contains("child") && array.contains("parent")) {
 			Set<String> nonDuplicateArray = new HashSet<>(array);
 			
-			StringBuffer buf = new StringBuffer("SUCCEEDED GUY:- KEY: "+key+" VALS: ");
-			for(String val: nonDuplicateArray) {
-				buf.append(" "+val);
-			}
-			System.out.println(buf.toString());
+//			StringBuffer buf = new StringBuffer("SUCCEEDED GUY:- KEY: "+key+" VALS: ");
+//			for(String val: nonDuplicateArray) {
+//				buf.append(" "+val);
+//			}
+//			System.out.println(buf.toString());
 			
 			for(String items:nonDuplicateArray){
 				if(items.equals("child") || items.equals("parent")){
@@ -49,12 +49,12 @@ public class FindSinks implements Job{
 			}
 		}
 		else {
-			StringBuffer buf = new StringBuffer("FAILED GUY:- KEY: "+key+" VALS: ");
-			Set<String> nonDuplicateArray = new HashSet<>(array);
-			for(String val: nonDuplicateArray) {
-				buf.append(" "+val);
-			}
-			System.out.println(buf.toString());
+//			StringBuffer buf = new StringBuffer("FAILED GUY:- KEY: "+key+" VALS: ");
+//			Set<String> nonDuplicateArray = new HashSet<>(array);
+//			for(String val: nonDuplicateArray) {
+//				buf.append(" "+val);
+//			}
+//			System.out.println(buf.toString());
 		}
 
 	}

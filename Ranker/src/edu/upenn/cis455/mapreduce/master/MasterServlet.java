@@ -48,8 +48,8 @@ public class MasterServlet extends HttpServlet {
 		this.inputDB = servletConfig.getInitParameter("InputDB"); //fetch details of storage directory
 		this.outputDB = servletConfig.getInitParameter("OutputDB");
 		int iterations  = Integer.parseInt(servletConfig.getInitParameter("iterations"));
-		//this.totalNoOfIterations = iterations + 1;
-		this.totalNoOfIterations = 0;
+		this.totalNoOfIterations = iterations + 1;
+		//this.totalNoOfIterations = 3;
 	}
 
 	public void doGet(HttpServletRequest request, HttpServletResponse response)

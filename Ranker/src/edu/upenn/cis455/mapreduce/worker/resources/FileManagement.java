@@ -191,7 +191,7 @@ public class FileManagement {
 				}
 			} else { //read from files
 				String line = inputReader.readLine();
-				System.out.println("FM read input line; "+line);
+//				System.out.println("FM read input line; "+line);
 				if(line==null) {
 					readComplete = true;
 					return null;
@@ -432,6 +432,7 @@ public class FileManagement {
 	 */
 	public synchronized void writeToOutput(String key, Object value) {
 		
+//		System.out.println("OUTPUT WRITING BY: "+Thread.currentThread().getName()+" Writing: "+key+"\t"+(String)value);
 		reduceOutputWriter.println(key+"\t"+(String)value);
 	}
 	

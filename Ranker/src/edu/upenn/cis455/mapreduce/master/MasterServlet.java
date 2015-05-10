@@ -60,11 +60,9 @@ public class MasterServlet extends HttpServlet {
 		this.outputDB = servletConfig.getInitParameter("OutputDB");
 		int iterations  = Integer.parseInt(servletConfig.getInitParameter("iterations"));
 		this.totalNoOfIterations = iterations + 1;
-		
 		System.out.println("Starting with db: "+this.outputDB);
 		wrapper = new DBRankerWrapper(this.outputDB);
 		wrapper.configure();
-		
 		//this.totalNoOfIterations = 3;
 	}
 
@@ -114,7 +112,6 @@ public class MasterServlet extends HttpServlet {
 			className = "edu.upenn.cis455.mapreduce.job.Ranker";
 			inputDir = "output" + (countOfIterations - 1);
 			outputDir = "output" + countOfIterations;
-
 		}
 
 		requestJob.setJob(className);

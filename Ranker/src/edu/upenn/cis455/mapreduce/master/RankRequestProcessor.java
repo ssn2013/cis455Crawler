@@ -4,9 +4,11 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import com.datformers.storage.DBIndexerWrapper;
 import com.datformers.storage.DBRankerWrapper;
@@ -25,15 +27,14 @@ public class RankRequestProcessor {
 	}
 
 	public List<String> getRankedDocs(Map<String, String> request) {
-		for(String key: request.keySet()) 
-			System.out.println("Key: "+key+" Value: "+request.get(key));
 		Set<String> docIds = request.keySet();
 		Map<String, Double> pageRank = new HashMap<String, Double>();
+		TreeMap<Double, LinkedList<String>> finalRank = new TreeMap<Double, LinkedList<String>>();
 		
 		PrimaryIndex<BigInteger,DocRanksStore> pageRankKey = wrapper.pageRankKey;
-		Transaction txn = null;
-		txn = wrapper.myEnv.beginTransaction(null, null);
-		EntityCursor<DocRanksStore> cursor = pageRankKey.entities(txn, null);
+//		Transaction txn = null;
+//		txn = wrapper.myEnv.beginTransaction(null, null);
+		EntityCursor<DocRanksStore> cursor = pageRankKey.entities();
 		Iterator<DocRanksStore> inputIterator = cursor.iterator();
 		
 		boolean first  = true;
@@ -53,16 +54,49 @@ public class RankRequestProcessor {
 						max = doc.getRank();
 				}
 			}
+			count++;
 		}
 		average = average/count;
+		average = (average+max)/2;
 		
-									
+		cursor.close();
 		
-		List<String> dummyReturns = new ArrayList<String>();
-		dummyReturns.add("a");
-		dummyReturns.add("b");
-		dummyReturns.add("c");
-		return dummyReturns;
+		//Calculation of page rank
+		Set<String> pageRankedDocs = pageRank.keySet();
+		for(String docId: request.keySet()) {
+			System.out.print("Key: "+docId);
+			double rank = Double.parseDouble(request.get(docId));
+			if(pageRankedDocs.contains(docId)) { //calculate rank
+				rank = rank * pageRank.get(docId);
+				System.out.println(" PageRank: "+pageRank.get(docId)+" FinalRank: "+rank);
+			} else {
+				rank = rank * average;
+				System.out.println(" Average: "+average+" FinalRank: "+rank);
+			}
+			
+			//Add to treemap
+			if(finalRank.containsKey(rank)) {
+				finalRank.get(rank).add(docId);
+			} else {
+				LinkedList<String> temp = new LinkedList<String>();
+				temp.add(docId);
+				finalRank.put(rank, temp);
+			}
+		}
+		
+//		List<String> dummyReturns = new ArrayList<String>();
+//		dummyReturns.add("a");
+//		dummyReturns.add("b");
+//		dummyReturns.add("c");
+		
+		List<String> resultSet = new ArrayList<String>();
+		for(double finRank: finalRank.keySet()) {
+			List<String> docs = finalRank.get(finRank);
+			for(String str: docs) {
+				resultSet.add(str);
+			}
+		}
+		return resultSet;
 	}
 
 }

@@ -181,9 +181,9 @@ public class MasterServlet extends HttpServlet {
 					body.append(line);
 				}
 				Map<String, String> requestedDocs = new HashMap<String, String>();
-				String docs[] = body.toString().split("$");
+				String docs[] = body.toString().split("\\$");
 				for(String docRankPair: docs) {
-					String parts[] = docRankPair.split("#");
+					String parts[] = docRankPair.split("\\#");
 					requestedDocs.put(parts[0], parts[1]);
 				}
 				response.setContentType("text/plain");

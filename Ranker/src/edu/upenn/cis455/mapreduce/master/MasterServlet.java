@@ -173,6 +173,40 @@ public class MasterServlet extends HttpServlet {
 			doPostCount++;
 			System.out.println("DOPOST COUNT: "+doPostCount);
 			writeFinalOutputToDB(request, response);
+		} else if(request.getServletPath().contains("fetchranks")) {
+			String line = null;
+			BufferedReader br;
+			try {
+				StringBuffer body = new StringBuffer();
+				br = request.getReader();
+				while((line = br.readLine())!=null) {
+					body.append(line);
+				}
+				Map<String, String> requestedDocs = new HashMap<String, String>();
+				String docs[] = body.toString().split("$");
+				for(String docRankPair: docs) {
+					String parts[] = docRankPair.split("#");
+					requestedDocs.put(parts[0], parts[1]);
+				}
+				response.setContentType("text/plain");
+				
+				//call to do all page rank calculations
+				if(wrapper == null) {
+					wrapper.configure();
+					wrapper.loadIndices();
+				}
+				List<String> rankedDocs = new RankRequestProcessor(wrapper).getRankedDocs(requestedDocs);
+				
+				body = new StringBuffer();
+				for(String str: rankedDocs) {
+					body.append(str+"$");
+				}
+				if(body.length()>0)
+					body.deleteCharAt(body.length()-1);
+				response.getWriter().println(body.toString());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 
 	}

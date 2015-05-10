@@ -71,10 +71,11 @@ public class FileManagement {
 		spoolInDirName = storageDir + "/spoolIn";
 		numWorkers = noWorkers;
 
+		//String inputName = inputDir;
 		String inputName = this.storageDir+"/"+inputDir;
 		//prepare input
 		if(databaseIO!=null && databaseIO.equals("input")) {
-			wrapper = new DBIndexerWrapper(inputName);
+			wrapper = new DBIndexerWrapper(inputDir);
 			wrapper.configure();
 			wrapper.loadIndices();
 			txn = wrapper.myEnv.beginTransaction(null, null);

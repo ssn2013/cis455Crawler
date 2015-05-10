@@ -37,8 +37,8 @@ public class WorkerServlet extends HttpServlet {
 	private String status = "idle";
 	private WorkerStatusUpdator wk;
 	private Thread wkt;
-	public static boolean cursorClosed = false;
-	public static boolean outputDBClosed = false;
+//	public static boolean cursorClosed = false;
+//	public static boolean outputDBClosed = false;
 	
 
 	// Job handling

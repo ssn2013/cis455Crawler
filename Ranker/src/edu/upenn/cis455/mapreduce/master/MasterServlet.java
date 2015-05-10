@@ -29,15 +29,12 @@ public class MasterServlet extends HttpServlet {
 	
 	static final long serialVersionUID = 455555001;
 	private Map<String, WorkerStatusMap> workerStatusMaps = new HashMap<String, WorkerStatusMap>(); // map
-	// of
-	// all
-	// worker
-	// node
-
-
+	
 	int countOfIterations = 0;
 	private int totalNoOfIterations = 0;
 	int workerOutputWrittenCount = 0;
+	
+	HashMap<String, String> prevState = new HashMap<String, String>();
 
 	private JobDetails presentMapJob = null; // details of present running job
 	private String job = null;
@@ -60,7 +57,8 @@ public class MasterServlet extends HttpServlet {
 		this.outputDB = servletConfig.getInitParameter("OutputDB");
 		int iterations  = Integer.parseInt(servletConfig.getInitParameter("iterations"));
 		this.totalNoOfIterations = iterations + 1;
-		System.out.println("Starting with db: "+this.outputDB);
+		System.out.println("Starting with input db: "+this.inputDB);
+		System.out.println("Starting with output db: "+this.outputDB);
 		wrapper = new DBRankerWrapper(this.outputDB);
 		wrapper.configure();
 		//this.totalNoOfIterations = 3;
@@ -296,16 +294,7 @@ public class MasterServlet extends HttpServlet {
 
 			workerStatusMaps.put(workerStatusMap.getIPPort(), workerStatusMap);
 			// Check if All reduce are reached
-//			int count = 0;
-//			if (prevState.containsKey(ipAddress + ":" + port)) {
-//				prevState.put(ipAddress + ":" + port, status);
-//				for (Map.Entry<String, String> entry : prevState.entrySet()) {
-//					String value = entry.getValue();
-//					if (value.equals("idle")) {
-//						count = count + 1;
-//					}
-//				}
-//			}
+			
 
 //			System.out.println("WORKER UPDATE:- Port: "
 //					+ port
@@ -325,18 +314,16 @@ public class MasterServlet extends HttpServlet {
 			if (presentMapJob != null) {
 				checkAndRunReduce(job);
 			}
-			if (presentMapJob != null) {
-				checkAndRunNextIteration(job);
-			}
+			//if (presentMapJob != null) {
+				checkAndRunNextIteration(workerStatusMap);
+			//}
 			
-			// check if relevant threads are waiting and
-			// run reduce
-			/*if (count == 3) {
-				prevState.clear();
-				countOfIterations++;
-				startPageRank();
-
-			}*/
+//			if (count ==workerStatusMaps.keySet().size()) {
+//				prevState.clear();
+//				countOfIterations++;
+//				checkAndRunNextIteration();
+//				
+//			}
 			response.setStatus(200);
 
 		} catch (Exception e) {
@@ -345,15 +332,27 @@ public class MasterServlet extends HttpServlet {
 
 	}
 
-	private void checkAndRunNextIteration(String jobName) {
+	private void checkAndRunNextIteration(WorkerStatusMap workerStatusMap) {
+//		int count = 0;
+//		for (String key : workerStatusMaps.keySet()) { // for the given job,
+//			// the waiting workers
+//			WorkerStatusMap map = workerStatusMaps.get(key);
+//			if (map.getJob().equals(jobName) && map.getStatus().equals("idle"))
+//				count++;
+//		}
+		
 		int count = 0;
-		for (String key : workerStatusMaps.keySet()) { // for the given job,
-			// the waiting workers
-			WorkerStatusMap map = workerStatusMaps.get(key);
-			if (map.getJob().equals(jobName) && map.getStatus().equals("idle"))
-				count++;
+		if (prevState.containsKey(workerStatusMap.getIPPort())) {
+			prevState.put(workerStatusMap.getIPPort(), workerStatusMap.getStatus());
+			for (Map.Entry<String, String> entry : prevState.entrySet()) {
+				String value = entry.getValue();
+				if (value.equals("idle")) {
+					count = count + 1;
+				}
+			}
 		}
-		if(count == presentMapJob.getNumWorkers()) {
+		
+		if(count == workerStatusMaps.keySet().size()) {
 			countOfIterations++;
 			if(countOfIterations>totalNoOfIterations){
 				if(countOfIterations==(totalNoOfIterations+1)) {
@@ -409,7 +408,7 @@ public class MasterServlet extends HttpServlet {
 			// for each given worker make /runreduce call
 			for (String key : workerStatusMaps.keySet()) {
 				HttpClient client = new HttpClient();
-			//	prevState.put(key, "reduce");
+				prevState.put(key, "reduce");
 				String url = "http://" + key + "/worker/runreduce";
 				client.makePostRequest(url,
 						Integer.parseInt(key.split(":")[1].trim()),

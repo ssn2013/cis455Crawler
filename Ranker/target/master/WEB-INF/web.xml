@@ -8,7 +8,7 @@
          <servlet-class>edu.upenn.cis455.mapreduce.master.MasterServlet</servlet-class>
          <init-param>
          	<param-name>InputDB</param-name>
-         	<param-value>database</param-value>
+         	<param-value>/home/aryaa/Desktop/theNEWdb/worker1/database</param-value>
          </init-param>
          <init-param>
          	<param-name>OutputDB</param-name>

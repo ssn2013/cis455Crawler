@@ -1,4 +1,5 @@
 ant clean 
+cp testConf/web-worker1.xml target/worker/WEB-INF/web.xml
 ant all
 scp -i ~/.ec2/datformers.pem master.war ubuntu@ec2-52-7-79-117.compute-1.amazonaws.com:~
 scp -i ~/.ec2/datformers.pem worker.war ubuntu@ec2-52-7-79-117.compute-1.amazonaws.com:~

@@ -51,7 +51,7 @@ public class MasterServlet extends HttpServlet {
 	@Override
 	public void init(ServletConfig servletConfig) throws javax.servlet.ServletException {
 		
-		System.out.println("INIT MASTER SErvelet");
+//		System.out.println("INIT MASTER SErvelet");
 		super.init(servletConfig);
 		this.inputDB = servletConfig.getInitParameter("InputDB"); //fetch details of storage directory
 		this.outputDB = servletConfig.getInitParameter("OutputDB");
@@ -170,8 +170,6 @@ public class MasterServlet extends HttpServlet {
 	public void doPost(HttpServletRequest request, HttpServletResponse response) {
 
 		if (request.getServletPath().contains("writetodb")) {
-			doPostCount++;
-			System.out.println("DOPOST COUNT: "+doPostCount);
 			writeFinalOutputToDB(request, response);
 		}
 
@@ -179,7 +177,7 @@ public class MasterServlet extends HttpServlet {
 
 	private synchronized void writeFinalOutputToDB(HttpServletRequest request,
 			HttpServletResponse response) {
-		System.out.println("Write to DB called");
+		System.out.println("Master ("+System.currentTimeMillis()+"):Write to DB called");
 		DocRanksStore entity = new DocRanksStore();
 
 		BufferedReader reader = null;
@@ -296,21 +294,21 @@ public class MasterServlet extends HttpServlet {
 			// Check if All reduce are reached
 			
 
-//			System.out.println("WORKER UPDATE:- Port: "
-//					+ port
-//					+ " Status: "
-//					+ status
-//					+ " Job: "
-//					+ job
-//					+ " keysRead: "
-//					+ keysRead
-//					+ " keysWritten: "
-//					+ keysWritten
-//					+ " ipAddress: "
-//					+ ipAddress
-//					+ " Put into map: "
-//					+ workerStatusMaps.get(workerStatusMap.getIPPort())
-//					.getJob());
+			System.out.println("WORKER UPDATE:- Port: "
+					+ port
+					+ " Status: "
+					+ status
+					+ " Job: "
+					+ job
+					+ " keysRead: "
+					+ keysRead
+					+ " keysWritten: "
+					+ keysWritten
+					+ " ipAddress: "
+					+ ipAddress
+					+ " Put into map: "
+					+ workerStatusMaps.get(workerStatusMap.getIPPort())
+					.getJob());
 			if (presentMapJob != null) {
 				checkAndRunReduce(job);
 			}

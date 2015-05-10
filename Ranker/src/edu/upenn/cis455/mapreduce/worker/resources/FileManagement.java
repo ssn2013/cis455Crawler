@@ -483,7 +483,7 @@ public class FileManagement {
 	public String getDataFromFile() {
 		String line = null;
 		if(fileReaderForSendingToMaster==null)
-			System.out.println("EMPTY READER");
+			System.out.println("FileManagement: EMPTY READER for SpoolIn psat sorted");
 		try {
 			while((line = fileReaderForSendingToMaster.readLine())!=null) {
 				String toSend = bufferForSendingToMaster.toString();

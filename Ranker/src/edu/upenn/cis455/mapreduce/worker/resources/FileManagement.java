@@ -244,6 +244,7 @@ public class FileManagement {
 	BufferedReader spoolOutReaderForWorker = null;
 	StringBuffer spoolOutChunkForWorker = new StringBuffer();
 	double PUSH_MAX_ALLOWED_SIZE = (1.9*1024*1024)-3;
+	//double PUSH_MAX_ALLOWED_SIZE = (1.9*1024)-3;
 	public void setSpoolOutFileReaderForWorker(int index) {
 		String fileName = spoolOutDir + "/worker" + index;
 		try {
@@ -470,6 +471,7 @@ public class FileManagement {
 	
 	BufferedReader fileReaderForSendingToMaster = null;
 	StringBuffer bufferForSendingToMaster = new StringBuffer();
+	//double MAX_ALLOWED_LENGTH = (1.9*1024*1024)-3;
 	double MAX_ALLOWED_LENGTH = (1.9*1024*1024)-3;
 	public void setToMasterReader(String file) {
 		try {
@@ -481,7 +483,7 @@ public class FileManagement {
 	public String getDataFromFile() {
 		String line = null;
 		if(fileReaderForSendingToMaster==null)
-			System.out.println("EMPTY READER");
+			System.out.println("FileManagement: EMPTY READER for SpoolIn psat sorted");
 		try {
 			while((line = fileReaderForSendingToMaster.readLine())!=null) {
 				String toSend = bufferForSendingToMaster.toString();

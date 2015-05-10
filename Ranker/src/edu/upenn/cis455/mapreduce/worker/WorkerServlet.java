@@ -129,7 +129,7 @@ public class WorkerServlet extends HttpServlet {
 	@Override
 	public void doPost(HttpServletRequest request, HttpServletResponse response) {
 		if (request.getPathInfo().contains("runmap")) {
-			System.out.println("WORKER GOT MAP REQUEST");
+			System.out.println("Worker ("+System.currentTimeMillis()+") Got runmap");
 			status = "mapping";
 			processRunMap(request, response); // redirect to method handing map
 												// calls
@@ -138,7 +138,7 @@ public class WorkerServlet extends HttpServlet {
 			processRunReduce(request, response); // redirect to method handling
 													// reduce calls
 		} else if (request.getPathInfo().contains("pushdata")) {
-			System.out.println("WORKER GOT PUSHDATA REQUEST");
+			System.out.println("Worker ("+System.currentTimeMillis()+") Got pushdata");
 			processPushData(request, response); // redirect to method handling
 												// pushdata calls
 		}
@@ -169,6 +169,18 @@ public class WorkerServlet extends HttpServlet {
 		String job = request.getParameter("job");
 		String output = request.getParameter("output");
 		int numThreads = Integer.parseInt(request.getParameter("numThreads"));
+		
+		//Unexpected call to reduce
+		if (currentJob==null) {
+			System.out.println("Worker ("+System.currentTimeMillis()+"): Unexpected call to reduce... currentJob null");
+			return;
+		}
+		
+		//Duplicate call to reduce
+		if (currentJob.getJob().equals(job) && !currentJob.isMapPhase && (currentJob.getOutputDir()!=null && currentJob.getOutputDir().equals(output))) {
+			System.out.println("Worker ("+System.currentTimeMillis()+"): Duplicate call to reduce of job: "+currentJob.getJob());
+			return;
+		}
 		
 		if (currentJob.getJob().equals(job)) { // check if reduce is called for
 												// current job
@@ -211,6 +223,12 @@ public class WorkerServlet extends HttpServlet {
 				+ " NUM_THREADS: " + numThreads + " NUM_WORKERS: " + numWorkers;
 		JobDetails jobDetails = new JobDetails(job, input, numThreads,
 				numWorkers);
+		
+		//Check if the request is already running
+		if(currentJob!=null && currentJob.isMapPhase && currentJob.getJob().equals(jobDetails.getJob()) && currentJob.getInputDir().equals(jobDetails.getInputDir())) {
+			System.out.println("Worker ("+System.currentTimeMillis()+"): Received duplicate request for map: "+currentJob.getJob());
+			return;
+		}
 		
 		for (int i = 1;; i++) {
 			String workerValue = request.getParameter("worker" + i);
@@ -256,6 +274,10 @@ public class WorkerServlet extends HttpServlet {
 	 */
 	public synchronized void updateCompletion() {
 		countOfCompletedThreads++;
+		if (currentJob==null) {
+			System.out.println("Worker ("+System.currentTimeMillis()+"): Unexpected complete job, thread count: "+countOfCompletedThreads);
+			return;
+		}
 		if (countOfCompletedThreads == currentJob.getNumThreads()) { // check
 																		// count
 																		// of

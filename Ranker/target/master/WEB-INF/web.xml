@@ -12,11 +12,11 @@
          </init-param>
          <init-param>
          	<param-name>OutputDB</param-name>
-         	<param-value>databaseOp</param-value>
+         	<param-value>/home/aryaa/Desktop/theNEWdb/rankerDb</param-value>
          </init-param>
          <init-param>
 			<param-name>iterations</param-name>
-			<param-value>3</param-value>
+			<param-value>2</param-value>
          </init-param>
      </servlet>
     
@@ -30,7 +30,6 @@
          <servlet-name>MasterServlet</servlet-name>
          <url-pattern>/status</url-pattern>
      </servlet-mapping>
-     
       
      <servlet-mapping>
          <servlet-name>MasterServlet</servlet-name>
@@ -39,7 +38,7 @@
      
      <servlet-mapping>
          <servlet-name>MasterServlet</servlet-name>
-         <url-pattern>/pagerank/*</url-pattern>
+         <url-pattern>/pagerank</url-pattern>
      </servlet-mapping>
      
 </web-app>

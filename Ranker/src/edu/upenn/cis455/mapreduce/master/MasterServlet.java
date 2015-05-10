@@ -26,7 +26,7 @@ import edu.upenn.cis455.mapreduce.util.JobDetails;
  * PLEASE NOTE: All URLs are relative to the Apache Tomcat server (i.e master would be http://<ip>:<port>/master/<path of request>
  */
 public class MasterServlet extends HttpServlet {
-
+	
 	static final long serialVersionUID = 455555001;
 	private Map<String, WorkerStatusMap> workerStatusMaps = new HashMap<String, WorkerStatusMap>(); // map
 	// of
@@ -61,10 +61,11 @@ public class MasterServlet extends HttpServlet {
 		int iterations  = Integer.parseInt(servletConfig.getInitParameter("iterations"));
 		this.totalNoOfIterations = iterations + 1;
 		
-		wrapper = new DBRankerWrapper("/home/aryaa/Desktop/theNEWdb/databaseOp");
+		System.out.println("Starting with db: "+this.outputDB);
+		wrapper = new DBRankerWrapper(this.outputDB);
 		wrapper.configure();
 		
-		this.totalNoOfIterations = 3;
+		//this.totalNoOfIterations = 3;
 	}
 
 	public void doGet(HttpServletRequest request, HttpServletResponse response)

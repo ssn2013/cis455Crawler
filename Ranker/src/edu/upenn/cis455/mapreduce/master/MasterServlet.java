@@ -47,17 +47,24 @@ public class MasterServlet extends HttpServlet {
 	private int numReduceThreads = 10;
 	private DBRankerWrapper wrapper;
 
+	private int doPostCount = 0;
+	
 //	HashMap<String, String> prevState = new HashMap<String, String>();
 	
 	@Override
 	public void init(ServletConfig servletConfig) throws javax.servlet.ServletException {
+		
+		System.out.println("INIT MASTER SErvelet");
 		super.init(servletConfig);
 		this.inputDB = servletConfig.getInitParameter("InputDB"); //fetch details of storage directory
 		this.outputDB = servletConfig.getInitParameter("OutputDB");
 		int iterations  = Integer.parseInt(servletConfig.getInitParameter("iterations"));
 		this.totalNoOfIterations = iterations + 1;
 		
-		//this.totalNoOfIterations = 3;
+		wrapper = new DBRankerWrapper("/home/aryaa/Desktop/theNEWdb/databaseOp");
+		wrapper.configure();
+		
+		this.totalNoOfIterations = 3;
 	}
 
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -102,17 +109,11 @@ public class MasterServlet extends HttpServlet {
 			break;
 			
 		default:
-//			if(countOfIterations==totalNoOfIterations) {
-//				className = "edu.upenn.cis455.mapreduce.job.Ranker";
-//				inputDir = "output" + countOfIterations;
-//				outputDir = outputDB;
-//				databaseIO = "output";	
-//			} else {
-				System.out.println("Master: Staring iteration: "+countOfIterations);
-				className = "edu.upenn.cis455.mapreduce.job.Ranker";
-				inputDir = "output" + (countOfIterations - 1);
-				outputDir = "output" + countOfIterations;
-//			}	
+			System.out.println("Master: Staring iteration: "+countOfIterations);
+			className = "edu.upenn.cis455.mapreduce.job.Ranker";
+			inputDir = "output" + (countOfIterations - 1);
+			outputDir = "output" + countOfIterations;
+
 		}
 
 		requestJob.setJob(className);
@@ -141,8 +142,8 @@ public class MasterServlet extends HttpServlet {
 		// worker working on
 		// the job
 		dataToSend.append("&numWorkers=" + availableWorkers.size());
-		presentMapJob = requestJob; // if there are threads, set this to current
 		// job
+		boolean firstTime = true;
 		String data = dataToSend.toString();
 		for (String key : availableWorkers) {
 			String urlString = "http://" + key.trim() + "/worker/runmap";
@@ -150,9 +151,16 @@ public class MasterServlet extends HttpServlet {
 			InputStream responseBody = httpClient.makePostRequest(urlString,
 					Integer.parseInt(key.split(":")[1].trim()),
 					"application/x-www-form-urlencoded", data);
-
+			if(firstTime) {
+				firstTime = false;
+				presentMapJob = requestJob; // if there are threads, set this to current
+			}
 		}
 
+	}
+	
+	public void destroy() {
+		wrapper.exit();
 	}
 
 	/*
@@ -166,6 +174,8 @@ public class MasterServlet extends HttpServlet {
 	public void doPost(HttpServletRequest request, HttpServletResponse response) {
 
 		if (request.getServletPath().contains("writetodb")) {
+			doPostCount++;
+			System.out.println("DOPOST COUNT: "+doPostCount);
 			writeFinalOutputToDB(request, response);
 		}
 
@@ -184,20 +194,22 @@ public class MasterServlet extends HttpServlet {
 		}
 		String line;
 		try {
-			System.out.println("===============" + workerStatusMaps.keySet().size());
-			while (workerOutputWrittenCount != workerStatusMaps.keySet().size() && (line = reader.readLine())!=null) {
-				System.out.println("===============line" + line);
+			while ((line = reader.readLine())!=null) {
 				if (line.contains("$END")) {
-					workerOutputWrittenCount++;				
-				} else {
-					String[] args = line.split(" ");
-					System.out.println("field[0], field[1]:"+ args[0] + ","+ args[1]);
+					workerOutputWrittenCount++;		
+					System.out.println("Reached END, count is now: "+workerOutputWrittenCount+" with line: "+line);
+					if(workerOutputWrittenCount == workerStatusMaps.keySet().size()){
+						wrapper.exit();	
+						System.out.println("I am done writing!!!");
+					}
+				} else if(line !=null){
+					String[] args = line.split("\t");
+					String[] vals = args[1].split(" ");
 					BigInteger docId = new BigInteger(args[0]);
 					entity.setDocId(docId);
-					entity.setRank(Double.parseDouble(args[1]));
-					//wrapper.pageRankKey.put(entity);
+					entity.setRank(Double.parseDouble(vals[0]));
+					wrapper.pageRankKey.put(entity);
 				}
-
 			}
 
 		} catch (IOException e) {
@@ -345,7 +357,6 @@ public class MasterServlet extends HttpServlet {
 		}
 		if(count == presentMapJob.getNumWorkers()) {
 			countOfIterations++;
-			System.out.println("count"+countOfIterations+"Total:" + totalNoOfIterations);
 			if(countOfIterations>totalNoOfIterations){
 				if(countOfIterations==(totalNoOfIterations+1)) {
 					String fileName = "output"+(countOfIterations-1);

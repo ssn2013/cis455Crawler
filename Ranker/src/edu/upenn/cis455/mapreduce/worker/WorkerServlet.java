@@ -104,16 +104,19 @@ public class WorkerServlet extends HttpServlet {
 		fileManagementObject.setToMasterReader(fileName);
 		
 		String dataToSend = null;
-		HttpClient httpClient  = new HttpClient();
 		
 		//get data
 		String urlString = "http://"+masterIPPort.trim()+"/master/writetodb";
-		System.out.println("Writing to URL: "+urlString);
+		int masterPort = Integer.parseInt(masterIPPort.split(":")[1]);
 		
 		while((dataToSend = fileManagementObject.getDataFromFile())!=null) {
-			httpClient.makePostRequest(urlString, port, "text/plain", dataToSend);
+			HttpClient httpClient  = new HttpClient();
+			System.out.println("Writing to URL: "+urlString);
+			httpClient.makePostRequest(urlString, masterPort, "text/plain", dataToSend);
 		}
-		httpClient.makePostRequest(urlString, port, "text/plain", "$END\n");
+		HttpClient httpClient  = new HttpClient();
+		System.out.println("Writing to URL: "+urlString+" END from port: "+port);
+		httpClient.makePostRequest(urlString, masterPort, "text/plain", "$END Worker on: "+port+"\n");
  	}
 
 	/*
@@ -126,6 +129,7 @@ public class WorkerServlet extends HttpServlet {
 	@Override
 	public void doPost(HttpServletRequest request, HttpServletResponse response) {
 		if (request.getPathInfo().contains("runmap")) {
+			System.out.println("WORKER GOT MAP REQUEST");
 			status = "mapping";
 			processRunMap(request, response); // redirect to method handing map
 												// calls
@@ -134,6 +138,7 @@ public class WorkerServlet extends HttpServlet {
 			processRunReduce(request, response); // redirect to method handling
 													// reduce calls
 		} else if (request.getPathInfo().contains("pushdata")) {
+			System.out.println("WORKER GOT PUSHDATA REQUEST");
 			processPushData(request, response); // redirect to method handling
 												// pushdata calls
 		}

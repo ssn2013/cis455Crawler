@@ -29,8 +29,9 @@ public class DBRankerWrapper {
 	public PrimaryIndex<BigInteger,DocRanksStore> pageRankKey;
 
 	public DBRankerWrapper(String env) {
+		
+		System.out.println("OUTPUT DB PATHNAME" + env);
 		envHome = new File(env);
-
 		// if the directory does not exist, create it
 		if (!envHome.exists()) {
 			boolean result = false;
@@ -96,12 +97,6 @@ public class DBRankerWrapper {
 				System.err.println("Error closing MyDbEnv: " + dbe.toString());
 				System.exit(-1);
 			}
-		}
-		try{
-			myEnv.cleanLog();
-			myEnv.close();
-		}catch(Exception e){
-			e.printStackTrace();
 		}
 	}
 

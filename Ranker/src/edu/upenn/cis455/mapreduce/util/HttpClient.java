@@ -158,9 +158,8 @@ public class HttpClient {
 			outputStream.write(requestString.getBytes());
 			outputStream.flush();
 			parseResponse();
-			
 		} catch (Exception e) {
-
+			e.printStackTrace();
 		} finally {
 			return responseBodyStream;
 		}

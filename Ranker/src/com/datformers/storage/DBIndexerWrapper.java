@@ -91,12 +91,6 @@ public class DBIndexerWrapper {
 				System.exit(-1);
 			}
 		}
-		try{
-			myEnv.cleanLog();
-			myEnv.close();
-		}catch(Exception e){
-			e.printStackTrace();
-		}
 	}
 
 }

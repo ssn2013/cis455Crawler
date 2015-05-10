@@ -441,22 +441,6 @@ public class FileManagement {
 	}
 	
 	/*
-	 * Method for emergency death
-	 */
-	public void closeEverythingAndDie() throws IOException {	
-		for(PrintWriter pw : printWritersSpoolOut) {
-			if(pw!=null)
-				pw.close();
-		}
-		if(inputReader!=null)
-			inputReader.close();
-		if(cursor!=null)
-			cursor.close();
-		if(wrapper!=null)
-			wrapper.exit();
-	}
-
-	/*
 	 * MEthod to close the pointer to output of reduce phase. It is called by
 	 * WorkerServlet when all threads are done writing output.
 	 */
@@ -467,7 +451,8 @@ public class FileManagement {
 	
 	BufferedReader fileReaderForSendingToMaster = null;
 	StringBuffer bufferForSendingToMaster = new StringBuffer();
-	double MAX_ALLOWED_LENGTH = (1.9*1024*1024)-3;
+	//double MAX_ALLOWED_LENGTH = (1.9*1024*1024)-3;
+	double MAX_ALLOWED_LENGTH = (1.9*1024)-3;
 	public void setToMasterReader(String file) {
 		try {
 			fileReaderForSendingToMaster = new BufferedReader(new FileReader(new File(storageDir+"/"+file)));
@@ -490,11 +475,9 @@ public class FileManagement {
 				bufferForSendingToMaster.append(line+'\n');
 			}
 			if(bufferForSendingToMaster.length()==0) {
-				System.out.println("FM: empty buffer");
 				return null;
 			} else {
 				String toSend = bufferForSendingToMaster.toString();
-				System.out.println("FM gonna send: "+toSend);
 				bufferForSendingToMaster = new StringBuffer();
 				return toSend;
 			}

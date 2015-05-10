@@ -9,11 +9,11 @@
          <servlet-class>edu.upenn.cis455.mapreduce.worker.WorkerServlet</servlet-class>
          <init-param>
            <param-name>storagedir</param-name>
-           <param-value>/home/sruthi/Desktop/theNEWdb/worker1</param-value>
+           <param-value>/mnt/pagerank</param-value>
          </init-param>
          <init-param>
            <param-name>master</param-name>
-           <param-value>127.0.0.1:8080</param-value>
+           <param-value>ec2-52-7-79-117.compute-1.amazonaws.com:8080</param-value>
          </init-param>
          <init-param>
            <param-name>port</param-name>

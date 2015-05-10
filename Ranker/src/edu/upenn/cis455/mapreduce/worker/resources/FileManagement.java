@@ -244,7 +244,6 @@ public class FileManagement {
 	BufferedReader spoolOutReaderForWorker = null;
 	StringBuffer spoolOutChunkForWorker = new StringBuffer();
 	double PUSH_MAX_ALLOWED_SIZE = (1.9*1024*1024)-3;
-	//double PUSH_MAX_ALLOWED_SIZE = (1.9*1024)-3;
 	public void setSpoolOutFileReaderForWorker(int index) {
 		String fileName = spoolOutDir + "/worker" + index;
 		try {
@@ -471,8 +470,7 @@ public class FileManagement {
 	
 	BufferedReader fileReaderForSendingToMaster = null;
 	StringBuffer bufferForSendingToMaster = new StringBuffer();
-	//double MAX_ALLOWED_LENGTH = (1.9*1024*1024)-3;
-	double MAX_ALLOWED_LENGTH = (1.9*1024)-3;
+	double MAX_ALLOWED_LENGTH = (1.9*1024*1024)-3;
 	public void setToMasterReader(String file) {
 		try {
 			fileReaderForSendingToMaster = new BufferedReader(new FileReader(new File(storageDir+"/"+file)));

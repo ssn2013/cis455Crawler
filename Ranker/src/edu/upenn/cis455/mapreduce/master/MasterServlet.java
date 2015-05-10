@@ -296,21 +296,8 @@ public class MasterServlet extends HttpServlet {
 			// Check if All reduce are reached
 			
 
-//			System.out.println("WORKER UPDATE:- Port: "
-//					+ port
-//					+ " Status: "
-//					+ status
-//					+ " Job: "
-//					+ job
-//					+ " keysRead: "
-//					+ keysRead
-//					+ " keysWritten: "
-//					+ keysWritten
-//					+ " ipAddress: "
-//					+ ipAddress
-//					+ " Put into map: "
-//					+ workerStatusMaps.get(workerStatusMap.getIPPort())
-//					.getJob());
+			System.out.println("WORKER UPDATE:- Port: "	+ port + " Status: "+ status+ " Job: "+ job+ " keysRead: "+ keysRead		+ " keysWritten: "
+					+ keysWritten+ " ipAddress: "+ ipAddress+ " Put into map: "+ workerStatusMaps.get(workerStatusMap.getIPPort()).getJob());
 			if (presentMapJob != null) {
 				checkAndRunReduce(job);
 			}

@@ -44,11 +44,11 @@
   <target name="all" depends="war-master,war-worker,compile-jobs"/>
   
   <target name="war-master" depends="compile-master">
-    <delete file="master.war"/>
+    <delete file="pagerankmaster.war"/>
   	
   	
   	
-    <jar destfile="master.war">
+    <jar destfile="pagerankmaster.war">
       <fileset dir="target/master/" includes="WEB-INF/classes/**/*.class"/>
       <fileset dir="target/master/" includes="WEB-INF/lib/**/*.jar"/>
       <fileset dir="target/master/" includes="WEB-INF/*.xml"/>
@@ -57,10 +57,10 @@
 
   <target name="war-worker" depends="compile-worker">
   	
-	<delete file="worker.war"/>
+	<delete file="pagerankworker.war"/>
     
 
-    <jar destfile="worker.war">
+    <jar destfile="pagerankworker.war">
       <fileset dir="target/worker/" includes="WEB-INF/classes/**/*.class"/>
       <fileset dir="target/worker/" includes="WEB-INF/lib/**/*.jar"/>
       <fileset dir="target/worker/" includes="WEB-INF/*.xml"/>
@@ -77,7 +77,7 @@
     <delete dir="target/master/WEB-INF/classes"/>
     <delete dir="target/worker/WEB-INF/classes"/>
     <delete dir="classes"/>
-    <delete file="master.war"/>
-    <delete file="worker.war"/>
+    <delete file="pagerankmaster.war"/>
+    <delete file="pagerankworker.war"/>
   </target>
 </project>

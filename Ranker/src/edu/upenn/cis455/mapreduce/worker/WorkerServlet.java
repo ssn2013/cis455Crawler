@@ -18,7 +18,7 @@ import edu.upenn.cis455.mapreduce.worker.resources.WorkerThread;
 
 /*
  * Class of Worker Servlet
- * PLEASE NOTE: All URLs are relative to the Apache Tomcat server (i.e worker would be http://<ip>:<port>/worker/<path of request>
+ * PLEASE NOTE: All URLs are relative to the Apache Tomcat server (i.e worker would be http://<ip>:<port>/pagerankworker/<path of request>
  */
 public class WorkerServlet extends HttpServlet {
 
@@ -106,7 +106,7 @@ public class WorkerServlet extends HttpServlet {
 		String dataToSend = null;
 		
 		//get data
-		String urlString = "http://"+masterIPPort.trim()+"/master/writetodb";
+		String urlString = "http://"+masterIPPort.trim()+"/pagerankmaster/writetodb";
 		int masterPort = Integer.parseInt(masterIPPort.split(":")[1]);
 		
 		while((dataToSend = fileManagementObject.getDataFromFile())!=null) {
@@ -327,7 +327,7 @@ public class WorkerServlet extends HttpServlet {
 		requestParameters.put("job", getPresentJobName());
 		requestParameters.put("keysRead", "" + getKeysRead());
 		requestParameters.put("keysWritten", "" + getKeysWritten());
-		String urlString = "http://" + masterIPPort + "/master/workerstatus";
+		String urlString = "http://" + masterIPPort + "/pagerankmaster/workerstatus";
 		HttpClient client = new HttpClient();
 
 		client.makeRequest(urlString,

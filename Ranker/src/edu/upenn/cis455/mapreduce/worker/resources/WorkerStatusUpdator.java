@@ -40,7 +40,7 @@ public class WorkerStatusUpdator implements Runnable {
 				requestParameters.put("keysRead", "" + parent.getKeysRead());
 				requestParameters.put("keysWritten", "" + parent.getKeysWritten());
 				String urlString = "http://" + masterIP + ":" + masterPort
-						+ "/master/workerstatus";
+						+ "/pagerankmaster/workerstatus";
 
 				client.makeRequest(urlString, Integer.parseInt(masterPort.trim()), requestParameters);
 //				if(client.getResponseCode()==200)

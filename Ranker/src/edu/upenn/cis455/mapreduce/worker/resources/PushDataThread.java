@@ -35,7 +35,7 @@ public class PushDataThread implements Runnable{
 		try {
 			for(String ipAddrStr: threadIPString) {
 				int counter = 0;
-				String urlString = "http://"+ipAddrStr+"/worker/pushdata";
+				String urlString = "http://"+ipAddrStr+"/pagerankworker/pushdata";
 				url = new URL(urlString);
 				fileManagement.setSpoolOutFileReaderForWorker(index);
 				String dataToSent = null;

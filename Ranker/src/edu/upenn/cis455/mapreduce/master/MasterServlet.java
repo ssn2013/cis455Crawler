@@ -23,7 +23,7 @@ import edu.upenn.cis455.mapreduce.util.JobDetails;
 
 /*
  * Master servlet acting as the master node
- * PLEASE NOTE: All URLs are relative to the Apache Tomcat server (i.e master would be http://<ip>:<port>/master/<path of request>
+ * PLEASE NOTE: All URLs are relative to the Apache Tomcat server (i.e master would be http://<ip>:<port>/pagerankmaster/<path of request>
  */
 public class MasterServlet extends HttpServlet {
 	
@@ -142,7 +142,7 @@ public class MasterServlet extends HttpServlet {
 		boolean firstTime = true;
 		String data = dataToSend.toString();
 		for (String key : availableWorkers) {
-			String urlString = "http://" + key.trim() + "/worker/runmap";
+			String urlString = "http://" + key.trim() + "/pagerankworker/runmap";
 			HttpClient httpClient = new HttpClient();
 			InputStream responseBody = httpClient.makePostRequest(urlString,
 					Integer.parseInt(key.split(":")[1].trim()),
@@ -405,7 +405,7 @@ public class MasterServlet extends HttpServlet {
 		for(String key: workerStatusMaps.keySet()) {
 			WorkerStatusMap map = workerStatusMaps.get(key);
 			HttpClient client = new HttpClient();
-			String url = "http://" + key + "/worker/writeToMe";
+			String url = "http://" + key + "/pagerankworker/writeToMe";
 			int port = Integer.parseInt(key.split(":")[1].trim());
 			//System.out.println("Master making request to URL: "+url+" with file: "+fileName);
 			Map<String, String> params = new HashMap<String, String>();
@@ -440,7 +440,7 @@ public class MasterServlet extends HttpServlet {
 			for (String key : workerStatusMaps.keySet()) {
 				HttpClient client = new HttpClient();
 				prevState.put(key, "reduce");
-				String url = "http://" + key + "/worker/runreduce";
+				String url = "http://" + key + "/pagerankworker/runreduce";
 				client.makePostRequest(url,
 						Integer.parseInt(key.split(":")[1].trim()),
 						"application/x-www-form-urlencoded", body);

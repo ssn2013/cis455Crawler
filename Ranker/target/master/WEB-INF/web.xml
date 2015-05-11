@@ -8,11 +8,11 @@
          <servlet-class>edu.upenn.cis455.mapreduce.master.MasterServlet</servlet-class>
          <init-param>
          	<param-name>InputDB</param-name>
-         	<param-value>/home/aryaa/Desktop/theNEWdb/worker1/database</param-value>
+         	<param-value>/Users/Adi/Documents/database</param-value>
          </init-param>
          <init-param>
          	<param-name>OutputDB</param-name>
-         	<param-value>/home/aryaa/Desktop/theNEWdb/rankerDb</param-value>
+         	<param-value>/Users/Adi/Documents/rankerDb</param-value>
          </init-param>
          <init-param>
 			<param-name>iterations</param-name>
@@ -39,6 +39,11 @@
      <servlet-mapping>
          <servlet-name>MasterServlet</servlet-name>
          <url-pattern>/pagerank</url-pattern>
+	 </servlet-mapping>
+	 
+     =<servlet-mapping>
+         <servlet-name>MasterServlet</servlet-name>
+         <url-pattern>/fetchranks</url-pattern>
      </servlet-mapping>
      
 </web-app>

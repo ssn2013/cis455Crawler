@@ -1,0 +1,40 @@
+<web-app xmlns="http://java.sun.com/xml/ns/j2ee" version="2.4">
+
+<display-name>Extract Data</display-name>
+
+<servlet>
+<servlet-name>extract</servlet-name>
+<servlet-class>fetch.Ext</servlet-class>
+<init-param>
+   <param-name>indexDb</param-name>
+     <param-value>/Users/Adi/Documents/workspace/Indexer/database_output</param-value> 
+   <!--  <param-value>/mnt/indexer_output</param-value> -->
+</init-param>
+<init-param>
+   <param-name>crawlerWorkers</param-name>
+   <param-value>/Users/Adi/Documents/workspace/SearchEngine/crawlerWorkers</param-value>
+</init-param>
+<load-on-startup>0</load-on-startup>
+</servlet>
+
+<servlet>
+<servlet-name>FetchDocs</servlet-name>
+<servlet-class>fetch.FetchDocs</servlet-class>
+<init-param>
+   <param-name>crawlerdb</param-name>
+   <param-value>/Users/Adi/Documents/workspace/Indexer/database</param-value>
+</init-param>
+<load-on-startup>0</load-on-startup>
+</servlet>
+
+<servlet-mapping>
+<servlet-name>extract</servlet-name>
+<url-pattern>/ext</url-pattern>
+</servlet-mapping>
+
+<servlet-mapping>
+<servlet-name>FetchDocs</servlet-name>
+<url-pattern>/fetchdocs</url-pattern>
+</servlet-mapping>
+
+</web-app>

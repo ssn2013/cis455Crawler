@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<!DOCTYPE web-app 
+    PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN" 
+    "http://java.sun.com/dtd/web-app_2_3.dtd">
+
+ <web-app>
+   <display-name>TOP SEARCH</display-name>
+    
+   
+   
+   <servlet>
+     <servlet-name>Search</servlet-name>
+      <jsp-file>/display.jsp</jsp-file> 
+   </servlet>
+   
+   <servlet-mapping>
+     <servlet-name>Search</servlet-name>
+     <url-pattern>/display.jsp</url-pattern>
+   </servlet-mapping>
+   
+   
+   
+   <servlet>
+     <servlet-name>TopSearch</servlet-name>
+     <servlet-class>FrontEnd.topSearch</servlet-class>
+     <init-param>
+			<param-name>indexWorkersFile</param-name>
+			   <param-value>/Users/Adi/Documents/workspace/SearchEngine/dummy_workers.txt</param-value> 
+			  <!--   <param-value>/mnt/index_workers.txt</param-value>  -->
+		</init-param>
+   </servlet>
+   
+   <servlet-mapping>
+     <servlet-name>TopSearch</servlet-name>
+     <url-pattern>/search</url-pattern>
+   </servlet-mapping>
+
+</web-app>

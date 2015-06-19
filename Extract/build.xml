@@ -1,0 +1,50 @@
+<project name="HW3" default="all" basedir="./">
+  <target name="init">
+    <mkdir dir="target/WEB-INF/classes"/>
+    <mkdir dir="classes"/>
+  </target>
+	<property name="base.dir" value="." />
+	<property name="lib.dir" value="${base.dir}/lib" />
+	
+	<path id="compile.classpath">
+		<fileset dir="${lib.dir}">
+		    <include name="**/*.jar" />
+		</fileset>
+	</path>
+  
+  <target name="compile-extract" depends="init">
+  	<copy todir="target/WEB-INF/lib">
+  	      <fileset dir="lib"/>
+  	</copy>
+  	<copy file="web.xml" todir="target/WEB-INF/"/>
+  	
+    <javac srcdir="src" destdir="target/WEB-INF/classes" includes="*.java" deprecation="on"
+     debug="true" includeantruntime="false">
+       <compilerarg value="-Xlint"/>
+    	<classpath refid="compile.classpath" />
+    </javac>
+  	
+  	<copy todir="target/WEB-INF/classes">
+  	  	  	      <fileset dir="classes"/>
+  	  	</copy>
+  </target>
+  
+
+
+  <target name="all" depends="war-extract"/>
+  
+  <target name="war-extract" depends="compile-extract">
+    <jar destfile="extract.war">
+      <fileset dir="target/" includes="WEB-INF/classes/**/*.class"/>
+      <fileset dir="target/" includes="WEB-INF/lib/*.jar"/>
+      <fileset dir="target/" includes="WEB-INF/*.xml"/>
+    </jar>
+  </target>
+
+  
+  <target name="clean">
+    <delete dir="target/WEB-INF/classes"/>
+    <delete dir="classes"/>
+    <delete file="extract.war"/>
+  </target>
+</project>
